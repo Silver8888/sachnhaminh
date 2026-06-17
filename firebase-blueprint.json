@@ -1,0 +1,170 @@
+{
+  "entities": {
+    "Slide": {
+      "title": "Slide",
+      "description": "A hero banner slide",
+      "type": "object",
+      "properties": {
+        "imageUrl": { "type": "string" },
+        "heading_vi": { "type": "string" },
+        "heading_en": { "type": "string" },
+        "description_vi": { "type": "string" },
+        "description_en": { "type": "string" },
+        "content_vi": { "type": "string" },
+        "content_en": { "type": "string" },
+        "effect": { "type": "string" },
+        "order": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["createdAt", "updatedAt"]
+    },
+    "User": {
+      "title": "User",
+      "description": "A user of the system",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "isAdmin": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["email", "isAdmin", "createdAt", "updatedAt"]
+    },
+    "Article": {
+      "title": "Article",
+      "description": "A news article",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "excerpt": { "type": "string" },
+        "content": { "type": "string" },
+        "date": { "type": "string" },
+        "image": { "type": "string" },
+        "readTime": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "content", "createdAt", "updatedAt"]
+    },
+    "GalleryItem": {
+      "title": "GalleryItem",
+      "description": "An image or video in the gallery",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "enum": ["image", "video"] },
+        "category": { "type": "string" },
+        "url": { "type": "string" },
+        "thumbnail": { "type": "string" },
+        "title": { "type": "string" },
+        "eventId": { "type": "number" },
+        "videoUrl": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["type", "category", "createdAt", "updatedAt"]
+    },
+    "Role": {
+      "title": "Role",
+      "description": "Role by email map for access control",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "isAdmin": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["email", "isAdmin", "createdAt", "updatedAt"]
+    },
+    "Book": {
+      "title": "Book",
+      "description": "A book review",
+      "type": "object",
+      "properties": {
+        "title_vi": { "type": "string" },
+        "title_en": { "type": "string" },
+        "author": { "type": "string" },
+        "coverUrl": { "type": "string" },
+        "review_vi": { "type": "string" },
+        "review_en": { "type": "string" },
+        "summary_vi": { "type": "string" },
+        "summary_en": { "type": "string" },
+        "rating": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title_vi", "author", "createdAt", "updatedAt"]
+    },
+    "Event": {
+      "title": "Event",
+      "description": "An event",
+      "type": "object",
+      "properties": {
+        "title_vi": { "type": "string" },
+        "title_en": { "type": "string" },
+        "date": { "type": "string" },
+        "time": { "type": "string" },
+        "endTime": { "type": "string" },
+        "location": { "type": "string" },
+        "description_vi": { "type": "string" },
+        "description_en": { "type": "string" },
+        "image": { "type": "string" },
+        "category": { "type": "string" },
+        "maxAttendees": { "type": "number", "description": "Maximum allowed attendees" },
+        "approvedCount": { "type": "number", "description": "Number of approved attendees" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title_vi", "date", "createdAt", "updatedAt"]
+    },
+    "Registration": {
+      "title": "Registration",
+      "description": "An event registration",
+      "type": "object",
+      "properties": {
+        "eventId": { "type": "string", "description": "ID of the event" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["eventId", "name", "email", "status", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/slides/{slideId}": {
+      "schema": { "$ref": "#/entities/Slide" },
+      "description": "Stores slides. Modifiable by admins."
+    },
+    "/roles/{email}": {
+      "schema": { "$ref": "#/entities/Role" },
+      "description": "Stores user roles keyed by email."
+    },
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Stores user profiles."
+    },
+    "/articles/{articleId}": {
+      "schema": { "$ref": "#/entities/Article" },
+      "description": "Stores news articles. Modifiable by admins."
+    },
+    "/gallery/{galleryItemId}": {
+      "schema": { "$ref": "#/entities/GalleryItem" },
+      "description": "Stores gallery images and videos. Modifiable by admins."
+    },
+    "/books/{bookId}": {
+      "schema": { "$ref": "#/entities/Book" },
+      "description": "Stores books and reviews. Modifiable by admins."
+    },
+    "/events/{eventId}": {
+      "schema": { "$ref": "#/entities/Event" },
+      "description": "Stores events. Modifiable by admins."
+    },
+    "/registrations/{registrationId}": {
+      "schema": { "$ref": "#/entities/Registration" },
+      "description": "Stores event registrations."
+    }
+  }
+}

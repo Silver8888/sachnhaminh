@@ -1,0 +1,6 @@
+1634: <section id={NAV_SLUGS[0]} className="relative min-h-screen flex items-center overflow-hidden py-32 lg:py-0">
+1791: <section id={NAV_SLUGS[1]} className="py-24 px-6 max-w-7xl mx-auto overflow-hidden">
+2164: <section id="theo-dong-van-hoa" className="py-24 px-6 max-w-7xl mx-auto overflow-hidden border-t border-black/[0.05]">
+2541: <section id={NAV_SLUGS[1]} className="py-32 px-6 bg-black/[0.01]">
+2765: <section id={NAV_SLUGS[1]} className="py-24 px-6 max-w-7xl mx-auto overflow-hidden">
+3314: <section id={NAV_SLUGS[1]} className="py-32 px-6 bg-black/[0.01]">

@@ -1,0 +1,1 @@
+CREATE TABLE IF NOT EXISTS email_templates (id UUID DEFAULT uuid_generate_v4() PRIMARY KEY, event_id TEXT, subject TEXT NOT NULL, body_html TEXT NOT NULL, created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()); 

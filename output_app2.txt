@@ -1,0 +1,16 @@
+1756: const [activeCategory, setActiveCategory] = useState<'school' | 'culture'>('school');
+1760: const filteredGallery = gallerySource.filter(i => i.category === activeCategory);
+1761: const filteredEvents = allEvents.filter(i => i.category === activeCategory);
+1770: const gallery = gallerySource.filter(i => i.category === activeCategory);
+1771: const events = allEvents.filter(i => i.category === activeCategory);
+1786: }, [selectedEventId, activeCategory, allEvents, gallerySource]);
+1798: onClick={() => setActiveCategory('school')}
+1799: className={`px-4 py-1.5 rounded-full text-[10px] uppercase tracking-wider font-bold transition-all ${activeCategory === 'school' ? `${config.accent} text-white shadow-sm` : `opacity-40 hover:opacity-100 ${config.text}`}`}
+1804: onClick={() => setActiveCategory('culture')}
+1805: className={`px-4 py-1.5 rounded-full text-[10px] uppercase tracking-wider font-bold transition-all ${activeCategory === 'culture' ? `${config.accent} text-white shadow-sm` : `opacity-40 hover:opacity-100 ${config.text}`}`}
+1813: {activeCategory === 'school' ? t.servicesTitle : t.cultureTitle}
+1960: const [activeCategory, setActiveCategory] = useState<'school' | 'culture'>('school');
+1962: const newsSource = dbArticles && dbArticles.length > 0 ? dbArticles : SCHOOL_NEWS;
+1963: const filteredNews = newsSource.filter(i => i.category === activeCategory);
+1980: onClick={() => setActiveCategory(cat)}
+1981: className={`px-6 py-2.5 rounded-full text-xs font-bold transition-all ${activeCategory === cat ? `${config.accent} text-white shadow-lg` : `opacity-40 hover:opacity-100 ${config.text}`}`}

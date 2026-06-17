@@ -1,0 +1,34 @@
+41: const [articles, setArticles] = useState<any[]>([]);
+53: const [activeTab, setActiveTab] = useState<'dashboard' | 'articles' | 'gallery' | 'events' | 'books' | 'roles' | 'slides' | 'contacts' | 'categories'>('dashboard');
+79: articles: 'Bài viết',
+95: noArticles: 'Chưa có bài viết. Hãy tạo bản ghi đầu tiên.',
+103: articles: 'Articles',
+119: noArticles: 'No articles found. Create your first article.',
+125: const fetchArticles = async () => {
+126: const { data, error } = await supabase.from('articles').select('*');
+127: if (!error && data) setArticles(data);
+332: fetchArticles();
+427: await supabase.from('articles').insert(payload);
+429: await supabase.from('articles').update(payload).eq('id', editingArticle.id);
+432: fetchArticles();
+715: if (window.confirm('Bạn có chắc chắn muốn xóa bài viết này?')) {
+716: await supabase.from('articles').delete().eq('id', id);
+717: fetchArticles();
+861: onClick={() => setActiveTab('articles')}
+862: className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'articles' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}
+865: {t.articles}
+949: {activeTab === 'articles' && (
+1025: <p className="text-sm text-gray-500 font-medium">Bài viết</p>
+1026: <h4 className="text-3xl font-bold text-gray-900 mt-1">{articles.length}</h4>
+1044: {/* Category Distribution - Articles */}
+1046: <h3 className="text-base font-semibold text-gray-800 mb-4">Phân bổ Bài viết</h3>
+1052: { name: 'Góc nhà mình', value: articles.filter(a => a.category === 'school').length },
+1053: { name: 'Kỹ năng cha mẹ', value: articles.filter(a => a.category === 'skills').length },
+1054: { name: 'Khác', value: articles.filter(a => a.category !== 'school' && a.category !== 'skills').length }
+1183: {activeTab === 'articles' && (
+1192: {articles.map(article => (
+1223: {articles.length === 0 && (
+1226: <p>{t.noArticles}</p>
+1761: <label className="text-xs font-medium text-gray-500">Nội dung bài viết đính kèm slide ({articleFormLang === 'vi' ? 'VI' : 'EN'})</label>
+1762: <p className="text-xs text-gray-400 mb-2">Bài viết hiển thị khi khách nhấn vào slide</p>
+1872: <input required placeholder="Tiêu đề bài viết..." value={editingArticle.title_vi || ''} onChange={e => setEditingArticle({...editingArticle, title_vi: e.target.value})} className="w-full border border-gray-300 font-medium pl-9 pr-3 py-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />

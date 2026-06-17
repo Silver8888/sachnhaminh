@@ -1,0 +1,295 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Primitive Helpers
+    function isValidId(id) { 
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); 
+    }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isSignedIn() { return request.auth != null; }
+    function isAdmin() { 
+      return isSignedIn() && (
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true)
+        || request.auth.token.email == 'cuongnt.aclw@gmail.com'
+        || (request.auth.token.email != null && exists(/databases/$(database)/documents/roles/$(request.auth.token.email)) && 
+            get(/databases/$(database)/documents/roles/$(request.auth.token.email)).data.isAdmin == true)
+      );
+    }
+
+    // Slide Model
+    function isValidSlide(data) {
+      return data.keys().hasAll(['createdAt', 'updatedAt'])
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp
+        && (!('imageUrl' in data) || (data.imageUrl is string && data.imageUrl.size() <= 2000))
+        && (!('heading_vi' in data) || (data.heading_vi is string && data.heading_vi.size() <= 300))
+        && (!('heading_en' in data) || (data.heading_en is string && data.heading_en.size() <= 300))
+        && (!('description_vi' in data) || (data.description_vi is string && data.description_vi.size() <= 2000))
+        && (!('description_en' in data) || (data.description_en is string && data.description_en.size() <= 2000))
+        && (!('content_vi' in data) || (data.content_vi is string && data.content_vi.size() <= 100000))
+        && (!('content_en' in data) || (data.content_en is string && data.content_en.size() <= 100000))
+        && (!('effect' in data) || (data.effect is string && data.effect.size() <= 100))
+        && (!('order' in data) || data.order is number);
+    }
+
+    match /slides/{slideId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Role Model
+    function isValidRole(data) {
+      return data.keys().hasAll(['email', 'isAdmin', 'createdAt', 'updatedAt'])
+        && data.email is string && data.email.size() >= 3 && data.email.size() <= 200
+        && data.isAdmin is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    match /roles/{emailId} {
+      allow read: if isAdmin() || (isSignedIn() && request.auth.token.email == emailId);
+      allow create, update: if isAdmin()
+        && isValidRole(incoming());
+      allow delete: if isAdmin();
+    }
+
+    // User Model
+    function isValidUser(data) {
+      return data.keys().hasAll(['email', 'isAdmin', 'createdAt', 'updatedAt'])
+        && data.email is string && data.email.size() >= 3 && data.email.size() <= 200
+        && data.isAdmin is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    match /users/{userId} {
+      // Users can read their own profile, admins can read all
+      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow create: if isSignedIn() 
+        && request.auth.uid == userId 
+        && isValidId(userId)
+        && isValidUser(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && (incoming().isAdmin == false || isAdmin())
+        && incoming().keys().size() == 4;
+
+      allow update: if isSignedIn()
+        && request.auth.uid == userId
+        && isValidUser(incoming())
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          (request.auth.uid == userId && incoming().diff(existing()).affectedKeys().hasOnly(['updatedAt', 'email'])) ||
+          isAdmin()
+        );
+        
+      allow delete: if isAdmin();
+    }
+
+    // Article Model
+    function isValidArticle(data) {
+      return data.keys().hasAll(['title_vi', 'title_en', 'content_vi', 'content_en', 'createdAt', 'updatedAt'])
+        && data.title_vi is string && data.title_vi.size() <= 300
+        && data.title_en is string && data.title_en.size() <= 300
+        && data.content_vi is string && data.content_vi.size() <= 100000
+        && data.content_en is string && data.content_en.size() <= 100000
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp
+        && (!('summary_vi' in data) || (data.summary_vi is string && data.summary_vi.size() <= 1000))
+        && (!('summary_en' in data) || (data.summary_en is string && data.summary_en.size() <= 1000))
+        && (!('date' in data) || (data.date is string && data.date.size() <= 100))
+        && (!('image' in data) || (data.image is string && data.image.size() <= 2000))
+        && (!('category' in data) || (data.category is string && data.category.size() <= 100));
+    }
+
+    match /articles/{articleId} {
+      allow read: if true;
+      allow create: if isAdmin() 
+        && isValidId(articleId)
+        && isValidArticle(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isAdmin()
+        && isValidArticle(incoming())
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time;
+      allow delete: if isAdmin();
+    }
+
+    // GalleryItem Model
+    function isValidGalleryItem(data) {
+      return data.keys().hasAll(['type', 'category', 'createdAt', 'updatedAt'])
+        && data.type is string && data.type in ['image', 'video']
+        && data.category is string && data.category.size() <= 100
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp
+        && (!('url' in data) || (data.url is string && data.url.size() <= 2000))
+        && (!('thumbnail' in data) || (data.thumbnail is string && data.thumbnail.size() <= 2000))
+        && (!('title' in data) || (data.title is string && data.title.size() <= 300))
+        && (!('eventId' in data) || data.eventId is number)
+        && (!('videoUrl' in data) || (data.videoUrl is string && data.videoUrl.size() <= 2000));
+    }
+
+    match /gallery/{galleryItemId} {
+      allow read: if true;
+      allow create: if isAdmin() 
+        && isValidId(galleryItemId)
+        && isValidGalleryItem(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isAdmin()
+        && isValidGalleryItem(incoming())
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time;
+      allow delete: if isAdmin();
+    }
+    // Book Model
+    function isValidBook(data) {
+      return data.keys().hasAll(['title_vi', 'author', 'createdAt', 'updatedAt'])
+        && data.title_vi is string && data.title_vi.size() <= 300
+        && data.author is string && data.author.size() <= 200
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp
+        && (!('title_en' in data) || (data.title_en is string && data.title_en.size() <= 300))
+        && (!('coverUrl' in data) || (data.coverUrl is string && data.coverUrl.size() <= 2000))
+        && (!('review_vi' in data) || (data.review_vi is string && data.review_vi.size() <= 100000))
+        && (!('review_en' in data) || (data.review_en is string && data.review_en.size() <= 100000))
+        && (!('summary_vi' in data) || (data.summary_vi is string && data.summary_vi.size() <= 2000))
+        && (!('summary_en' in data) || (data.summary_en is string && data.summary_en.size() <= 2000))
+        && (!('rating' in data) || data.rating is number)
+        && (!('isHotMonth' in data) || data.isHotMonth is bool)
+        && (!('isTypical10' in data) || data.isTypical10 is bool)
+        && (!('isMustRead100' in data) || data.isMustRead100 is bool);
+    }
+
+    match /books/{bookId} {
+      allow read: if true;
+      allow create: if isAdmin() 
+        && isValidId(bookId)
+        && isValidBook(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isAdmin()
+        && isValidBook(incoming())
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time;
+      allow delete: if isAdmin();
+    }
+
+    // Sub-category Model
+    function isValidSubCategory(data) {
+      return data.keys().hasAll(['name_vi', 'name_en', 'updatedAt'])
+        && data.name_vi is string && data.name_vi.size() <= 200
+        && data.name_en is string && data.name_en.size() <= 200
+        && (!('createdAt' in data) || data.createdAt is timestamp)
+        && data.updatedAt is timestamp;
+    }
+
+    match /subCategories/{subCategoryId} {
+      allow read: if true;
+      allow create: if isAdmin() 
+        && isValidId(subCategoryId)
+        && isValidSubCategory(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isAdmin()
+        && isValidSubCategory(incoming())
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time;
+      allow delete: if isAdmin();
+    }
+
+    // Event Model
+    function isValidEvent(data) {
+      return data.keys().hasAll(['title_vi', 'date', 'createdAt', 'updatedAt'])
+        && data.title_vi is string && data.title_vi.size() <= 300
+        && data.date is string && data.date.size() <= 100
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp
+        && (!('title_en' in data) || (data.title_en is string && data.title_en.size() <= 300))
+        && (!('time' in data) || (data.time is string && data.time.size() <= 100))
+        && (!('endTime' in data) || (data.endTime is string && data.endTime.size() <= 100))
+        && (!('location' in data) || (data.location is string && data.location.size() <= 300))
+        && (!('description_vi' in data) || (data.description_vi is string && data.description_vi.size() <= 50000))
+        && (!('description_en' in data) || (data.description_en is string && data.description_en.size() <= 50000))
+        && (!('image' in data) || (data.image is string && data.image.size() <= 2000))
+        && (!('category' in data) || (data.category is string && data.category.size() <= 100))
+        && (!('subCategory' in data) || (data.subCategory is string && data.subCategory.size() <= 100))
+        && (!('maxAttendees' in data) || (data.maxAttendees is number))
+        && (!('approvedCount' in data) || (data.approvedCount is number));
+    }
+
+    match /events/{eventId} {
+      allow read: if true;
+      allow create: if isAdmin() 
+        && isValidId(eventId)
+        && isValidEvent(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isAdmin()
+        && isValidEvent(incoming())
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time;
+      allow delete: if isAdmin();
+    }
+
+    // Registration Model
+    function isValidRegistration(data) {
+      return data.keys().hasAll(['eventId', 'name', 'email', 'status', 'createdAt', 'updatedAt'])
+        && data.eventId is string && data.eventId.size() <= 128
+        && data.name is string && data.name.size() <= 200
+        && data.email is string && data.email.size() <= 200
+        && (!('phone' in data) || (data.phone is string && data.phone.size() <= 20))
+        && data.status in ['pending', 'approved', 'rejected']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    match /registrations/{registrationId} {
+      allow read: if isAdmin();
+      // Anyone can create a registration
+      allow create: if isValidRegistration(incoming())
+        && exists(/databases/$(database)/documents/events/$(incoming().eventId))
+        && incoming().status == 'pending'
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isAdmin()
+        && isValidRegistration(incoming())
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time;
+      allow delete: if isAdmin();
+    }
+
+    // Contact Model
+    function isValidContact(data) {
+      return data.keys().hasAll(['name', 'email', 'phone', 'message', 'status', 'createdAt'])
+        && data.name is string && data.name.size() <= 200
+        && data.email is string && data.email.size() <= 200
+        && data.phone is string && data.phone.size() <= 50
+        && data.message is string && data.message.size() <= 5000
+        && data.status in ['new', 'read']
+        && data.createdAt is timestamp;
+    }
+
+    match /contacts/{contactId} {
+      allow read: if isAdmin();
+      // Anyone can submit a contact form
+      allow create: if isValidContact(incoming())
+        && incoming().status == 'new'
+        && incoming().createdAt == request.time;
+      allow update: if isAdmin()
+        && isValidContact(incoming())
+        && incoming().createdAt == existing().createdAt;
+      allow delete: if isAdmin();
+    }
+  }
+}
+

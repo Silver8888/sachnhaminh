@@ -1,0 +1,13 @@
+111: const NAV_SLUGS = ['trang-chu', 'tieu-diem', 'su-kien', 'diem-sach', 'lien-he'];
+149: nav: ['Trang chủ', 'Tiêu điểm', 'Sự Kiện', 'Điểm sách', 'Liên Hệ'],
+186: nav: ['Home', 'Highlights', 'Events', 'Book Reviews', 'Contact'],
+1461: <a key={item} href={`#${NAV_SLUGS[index]}`} className={`text-sm font-medium ${config.text} hover:opacity-70 transition-opacity`}>
+1554: href={`#${NAV_SLUGS[index]}`}
+1634: <section id={NAV_SLUGS[0]} className="relative min-h-screen flex items-center overflow-hidden py-32 lg:py-0">
+1680: <a href={`#${NAV_SLUGS[1]}`} className={`${config.accent} text-white px-8 py-4 rounded-full font-medium flex items-center justify-center gap-2 hover:brightness-110 transition-all shadow-lg`}>
+1791: <section id={NAV_SLUGS[3]} className="py-24 px-6 max-w-7xl mx-auto overflow-hidden">
+1966: <section id={NAV_SLUGS[1]} className={`py-24 px-6 border-t ${config.border} bg-black/[0.01]`}>
+2541: <section id={NAV_SLUGS[4]} className="py-32 px-6 bg-black/[0.01]">
+2765: <section id={NAV_SLUGS[3]} className="py-24 px-6 max-w-7xl mx-auto overflow-hidden">
+2949: <li key={item}><a href={`#${NAV_SLUGS[index]}`} className={`${config.text} opacity-80 hover:opacity-100 transition-all text-sm`}>{item}</a></li>
+3314: <section id={NAV_SLUGS[4]} className="py-32 px-6 bg-black/[0.01]">
