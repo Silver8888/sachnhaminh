@@ -408,7 +408,7 @@ export const Admin = () => {
 
   useEffect(() => {
     let unsubscribeRegistrations: (() => void) | undefined;
-    if (isAdmin) {
+    if (isStaff) {
       fetchArticles();
       fetchSlides();
       fetchGallery();
@@ -424,7 +424,7 @@ export const Admin = () => {
     return () => {
       if (unsubscribeRegistrations) unsubscribeRegistrations();
     };
-  }, [isAdmin]);
+  }, [isStaff]);
 
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
