@@ -1283,10 +1283,10 @@ export const Admin = () => {
           </button>
         </div>
 
-        {/* Header Desktop */}
-        <header className="hidden md:flex h-16 bg-white border-b border-gray-200 items-center px-8 justify-between shrink-0">
-          <h2 className="text-lg font-semibold text-gray-800 capitalize">{t[activeTab as keyof typeof t]} {t.management}</h2>
-          <div className="flex items-center gap-3">
+        {/* Header Desktop & Mobile Actions */}
+        <header className="flex flex-col md:flex-row md:h-16 bg-white border-b border-gray-200 items-start md:items-center px-4 py-3 md:py-0 md:px-8 justify-between shrink-0 gap-2 md:gap-0">
+          <h2 className="hidden md:block text-lg font-semibold text-gray-800 capitalize">{t[activeTab as keyof typeof t]} {t.management}</h2>
+          <div className="flex items-center gap-2 md:gap-3 overflow-x-auto w-full md:w-auto hide-scrollbar">
              {activeTab === 'slides' && (
                 <button onClick={() => setEditingSlide({ id: 'NEW', title_vi: '', content_vi: '', order: slides.length + 1 })} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors flex items-center gap-2 shadow-sm">
                   <Plus className="w-4 h-4" /> {t.addSlide}
