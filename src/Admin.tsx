@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { useAuth } from './lib/AuthContext';
 import { supabase } from './lib/supabase';
-import { FileText, Image as ImageIcon, LogOut, Edit3, Trash2, Plus, Calendar, Type, Users, BookOpen, Clock, MapPin, Star, UserPlus, Globe, LayoutDashboard, X, Bell, Mail, Phone, Check, Tag, Download } from 'lucide-react';
+import { FileText, Image as ImageIcon, LogOut, Edit3, Trash2, Plus, Calendar, Type, Users, BookOpen, Clock, MapPin, Star, UserPlus, Globe, LayoutDashboard, X, Bell, Mail, Phone, Check, Tag, Download, Menu } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { sendRegistrationEmail } from './utils/emailService';
 import * as XLSX from 'xlsx';
