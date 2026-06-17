@@ -5,14 +5,18 @@ import { User } from '@supabase/supabase-js';
 interface AuthContextType {
   user: User | null;
   isAdmin: boolean;
+  isStaff: boolean;
+  roleLevel: 'admin' | 'editor' | null;
   loading: boolean;
 }
 
-const AuthContext = createContext<AuthContextType>({ user: null, isAdmin: false, loading: true });
+const AuthContext = createContext<AuthContextType>({ user: null, isAdmin: false, isStaff: false, roleLevel: null, loading: true });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isStaff, setIsStaff] = useState(false);
+  const [roleLevel, setRoleLevel] = useState<'admin' | 'editor' | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -39,16 +43,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const checkAdminStatus = async (currentUser: User | null) => {
     if (!currentUser) {
       setIsAdmin(false);
+      setIsStaff(false);
+      setRoleLevel(null);
       return;
     }
 
     if (currentUser.email === 'cuongnt.aclw@gmail.com') {
       setIsAdmin(true);
+      setIsStaff(true);
+      setRoleLevel('admin');
       return;
     }
 
     try {
       let userIsAdmin = false;
+      let userIsStaff = false;
+      let level: 'admin' | 'editor' | null = null;
       
       // Check roles table by email
       if (currentUser.email) {
@@ -58,13 +68,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           .eq('email', currentUser.email.toLowerCase().trim())
           .maybeSingle();
           
-        if (!roleError && roleData?.is_admin) {
-          userIsAdmin = true;
+        if (!roleError && roleData) {
+          userIsStaff = true;
+          userIsAdmin = !!roleData.is_admin;
+          level = roleData.is_admin ? 'admin' : 'editor';
         }
       }
 
       // Check profiles table by id if not found in roles
-      if (!userIsAdmin) {
+      if (!userIsStaff) {
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('is_admin')
@@ -72,18 +84,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           .maybeSingle();
 
         if (!profileError && profileData?.is_admin) {
+          userIsStaff = true;
           userIsAdmin = true;
+          level = 'admin';
         }
       }
 
+      setIsStaff(userIsStaff);
       setIsAdmin(userIsAdmin);
+      setRoleLevel(level);
     } catch (e) {
       console.error('Error fetching user privileges from Supabase:', e);
+      setIsStaff(false);
       setIsAdmin(false);
+      setRoleLevel(null);
     }
   };
 
-  return <AuthContext.Provider value={{ user, isAdmin, loading }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ user, isAdmin, isStaff, roleLevel, loading }}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => useContext(AuthContext);

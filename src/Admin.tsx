@@ -39,7 +39,7 @@ const quillModulesSimple = {
 };
 
 export const Admin = () => {
-  const { user, isAdmin, loading } = useAuth();
+  const { user, isStaff, roleLevel, loading } = useAuth();
   const [articles, setArticles] = useState<any[]>([]);
   const [gallery, setGallery] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
@@ -850,9 +850,14 @@ export const Admin = () => {
       return alert('Email không hợp lệ');
     }
 
+    if (roleLevel !== 'admin' && editingRole.id !== 'NEW' && editingRole.is_admin) {
+      setIsSaving(false);
+      return alert('Bạn không có quyền chỉnh sửa tài khoản Quản trị viên!');
+    }
+
     const payload = {
       email: emailKey,
-      is_admin: editingRole.isAdmin === true,
+      is_admin: roleLevel === 'admin' ? (editingRole.isAdmin === true) : false,
     };
 
     try {
@@ -1017,6 +1022,9 @@ export const Admin = () => {
       // Find role email by id
       const r = roles.find(role => role.id === id || role.email === id);
       if (r) {
+        if (roleLevel !== 'admin' && r.is_admin) {
+           return alert('Bạn không có quyền xóa tài khoản Quản trị viên!');
+        }
         // 1. Xóa khỏi bảng public.roles
         await supabase.from('roles').delete().eq('email', r.email);
 
@@ -1090,7 +1098,7 @@ export const Admin = () => {
     );
   }
 
-  if (!isAdmin) {
+  if (!isStaff) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
          <div className="bg-white p-8 rounded-xl shadow-lg border border-gray-100 max-w-md w-full text-center">
@@ -2300,7 +2308,7 @@ export const Admin = () => {
                   <p className="text-xs text-gray-500">Chỉ những email được thêm tại đây mới có quyền đăng nhập trang quản trị.</p>
                </div>
                <div className="divide-y divide-gray-100">
-                  {roles.map(role => (
+                  {roles.filter(role => roleLevel === 'admin' || !role.is_admin).map(role => (
                     <div key={role.id || role.email} className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors">
                       <div className="flex items-center gap-3">
                          <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center font-bold">
@@ -3009,10 +3017,12 @@ export const Admin = () => {
                            <input required type="password" placeholder="Nhập mật khẩu (tối thiểu 6 ký tự)" minLength={6} value={editingRole.password || ''} onChange={e => setEditingRole({...editingRole, password: e.target.value})} className="w-full border border-gray-300 px-3 py-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
                         </div>
                      )}
-                     <div className="flex items-center gap-3 mt-4">
-                        <input type="checkbox" id="isAdminCheckbox" checked={editingRole.isAdmin} onChange={e => setEditingRole({...editingRole, isAdmin: e.target.checked})} className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
-                        <label htmlFor="isAdminCheckbox" className="text-sm font-medium text-gray-700">Quyền Quản trị viên (Admin)</label>
-                     </div>
+                     {roleLevel === 'admin' && (
+                       <div className="flex items-center gap-3 mt-4">
+                          <input type="checkbox" id="isAdminCheckbox" checked={editingRole.isAdmin} onChange={e => setEditingRole({...editingRole, isAdmin: e.target.checked})} className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
+                          <label htmlFor="isAdminCheckbox" className="text-sm font-medium text-gray-700">Quyền Quản trị viên (Admin)</label>
+                       </div>
+                     )}
                   </form>
                 </div>
 
