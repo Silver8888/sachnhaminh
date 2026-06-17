@@ -54,6 +54,7 @@ export const Admin = () => {
   
   const [adminLang, setAdminLang] = useState<'vi' | 'en'>('vi');
   const [activeTab, setActiveTab] = useState<'dashboard' | 'articles' | 'gallery' | 'events' | 'books' | 'roles' | 'slides' | 'contacts' | 'categories' | 'articleCategories' | 'checkin' | 'crm'>('dashboard');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const [crmSearch, setCrmSearch] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
@@ -1106,8 +1107,22 @@ export const Admin = () => {
 
   return (
     <div className="flex h-screen bg-gray-100 font-sans">
+      {/* Mobile Menu Overlay */}
+      {mobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 md:hidden" 
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
+      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 flex flex-col transform transition-transform duration-300 md:relative md:translate-x-0 ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <button 
+          onClick={() => setMobileMenuOpen(false)} 
+          className="md:hidden absolute top-4 right-4 p-2 bg-gray-100 rounded-full hover:bg-gray-200"
+        >
+          <X className="w-4 h-4 text-gray-600"/>
+        </button>
         <div className="h-16 flex items-center justify-between px-6 border-b border-gray-100">
           <h1 className="text-xl font-bold tracking-tight text-gray-900">{t.portal}</h1>
           <button onClick={() => setAdminLang(adminLang === 'vi' ? 'en' : 'vi')} className="text-xs font-bold uppercase tracking-widest text-gray-400 hover:text-blue-600 transition-colors">
@@ -1243,9 +1258,25 @@ export const Admin = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col h-screen overflow-hidden">
-        {/* Header */}
-        <header className="h-16 bg-white border-b border-gray-200 flex items-center px-8 justify-between shrink-0">
+      <div className="flex-1 flex flex-col h-screen overflow-hidden bg-gray-50">
+        {/* Mobile Header Toolbar */}
+        <div className="md:hidden bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between z-30">
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => setMobileMenuOpen(true)}
+              className="p-2 -ml-2 bg-gray-50 rounded-lg hover:bg-gray-100"
+            >
+              <Menu className="w-5 h-5 text-gray-700" />
+            </button>
+            <h2 className="font-bold text-gray-900 capitalize tracking-tight">{activeTab}</h2>
+          </div>
+          <button onClick={() => setAdminLang(adminLang === 'vi' ? 'en' : 'vi')} className="text-xs font-bold uppercase tracking-widest text-gray-400 hover:text-blue-600 transition-colors">
+            {adminLang === 'vi' ? 'VI' : 'EN'}
+          </button>
+        </div>
+
+        {/* Header Desktop */}
+        <header className="hidden md:flex h-16 bg-white border-b border-gray-200 items-center px-8 justify-between shrink-0">
           <h2 className="text-lg font-semibold text-gray-800 capitalize">{t[activeTab as keyof typeof t]} {t.management}</h2>
           <div className="flex items-center gap-3">
              {activeTab === 'slides' && (
@@ -1794,16 +1825,20 @@ export const Admin = () => {
                    <button onClick={() => { setAdminEventSearch(''); setAdminEventDate(''); }} className="text-sm text-gray-500 hover:text-blue-600">Xóa lọc</button>
                  )}
                </div>
-               <div className="grid grid-cols-12 gap-4 p-4 border-b border-gray-100 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  <div className="col-span-1">STT</div>
-                  <div className="col-span-1">Mã SK</div>
-                  <div className="col-span-3">Event Title</div>
-                  <div className="col-span-2">Creator / At</div>
-                  <div className="col-span-2">Date/Time</div>
-                  <div className="col-span-2">Location/Attendees</div>
-                  <div className="col-span-1 text-right">Actions</div>
-               </div>
-               <div className="divide-y divide-gray-100">
+               <div className="overflow-x-auto">
+                 <table className="w-full text-left text-sm text-gray-600 whitespace-nowrap min-w-[1000px]">
+                   <thead className="bg-gray-50 text-xs uppercase text-gray-500 border-b border-gray-100">
+                     <tr>
+                       <th className="px-4 py-3 w-16">STT</th>
+                       <th className="px-4 py-3 w-24">Mã SK</th>
+                       <th className="px-4 py-3 min-w-[200px]">Event Title</th>
+                       <th className="px-4 py-3 w-32">Creator / At</th>
+                       <th className="px-4 py-3 w-40">Date/Time</th>
+                       <th className="px-4 py-3 w-48">Location/Attendees</th>
+                       <th className="px-4 py-3 w-24 text-right">Actions</th>
+                     </tr>
+                   </thead>
+                   <tbody className="divide-y divide-gray-100">
                   {events
                     .filter(e => {
                       let match = true;
@@ -1832,46 +1867,52 @@ export const Admin = () => {
                       const pendingCount = allRegistrations.filter(r => String(r.eventId || r.event_id) === String(event.id) && r.status === 'pending').length;
                       const actualApprovedCount = allRegistrations.filter(r => String(r.eventId || r.event_id) === String(event.id) && r.status === 'approved').reduce((sum, r) => sum + (Number(r.participants) || 1), 0);
                       return (
-                      <div key={event.id} className="grid grid-cols-12 gap-4 p-4 items-center hover:bg-gray-50 transition-colors">
-                        <div className="col-span-1 text-sm font-medium text-gray-500 flex flex-col items-start gap-1">
-                        <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs">#{index + 1}</span>
-                      </div>
-                      <div className="col-span-1 flex flex-col items-start gap-1">
-                        {event.code ? <div className="text-[10px] uppercase font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">{event.code}</div> : <span className="text-gray-300 text-xs">-</span>}
-                      </div>
-                      <div className="col-span-3 font-medium text-gray-900 truncate">
-                        <div className="flex flex-col gap-1">
-                           <span className="truncate font-bold" title={event.title_vi}>{event.title_vi}</span>
-                           <div className="text-[10px] text-gray-500 flex items-center gap-1">
-                             <span className="capitalize font-semibold">{event.category === 'sachnhaminh' ? 'Sách Nhà Mình' : event.category === 'external' ? 'Sự kiện ngoài' : (event.category === 'school' ? 'Sách Nhà Mình' : event.category === 'culture' ? 'Sách Nhà Mình' : event.category || 'Mặc định')}</span>
-                             <span>&gt;</span>
-                             <span className="text-blue-600 font-semibold">
-                               {subCategories.find(c => c.id === event.subCategory)?.name_vi || 'Mặc định'}
+                      <tr key={event.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-4 py-4 text-sm font-medium text-gray-500">
+                          <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs">#{index + 1}</span>
+                        </td>
+                        <td className="px-4 py-4">
+                          {event.code ? <div className="text-[10px] uppercase font-bold text-blue-600 bg-blue-50 px-2 py-0.5 inline-block rounded">{event.code}</div> : <span className="text-gray-300 text-xs">-</span>}
+                        </td>
+                        <td className="px-4 py-4 font-medium text-gray-900 truncate">
+                          <div className="flex flex-col gap-1">
+                             <span className="truncate font-bold" title={event.title_vi}>{event.title_vi}</span>
+                             <div className="text-[10px] text-gray-500 flex items-center gap-1">
+                               <span className="capitalize font-semibold">{event.category === 'sachnhaminh' ? 'Sách Nhà Mình' : event.category === 'external' ? 'Sự kiện ngoài' : (event.category === 'school' ? 'Sách Nhà Mình' : event.category === 'culture' ? 'Sách Nhà Mình' : event.category || 'Mặc định')}</span>
+                               <span>&gt;</span>
+                               <span className="text-blue-600 font-semibold">
+                                 {subCategories.find(c => c.id === event.subCategory)?.name_vi || 'Mặc định'}
+                               </span>
+                             </div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-4 text-xs text-gray-500">
+                          <div className="flex flex-col gap-0.5">
+                             <span className="text-gray-700 truncate" title={event.createdBy || 'Unknown'}>{event.createdBy || 'Unknown'}</span>
+                             <span className="text-[10px] opacity-70">
+                               {event.createdAt?.seconds ? new Date(event.createdAt.seconds * 1000).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' }) : 'N/A'}
                              </span>
-                           </div>
-                           {/* Badge moved to manage button */}
-                        </div>
-                      </div>
-                      <div className="col-span-2 text-xs text-gray-500 flex flex-col gap-0.5 truncate">
-                         <span className="text-gray-700 truncate" title={event.createdBy || 'Unknown'}>{event.createdBy || 'Unknown'}</span>
-                         <span className="text-[10px] opacity-70">
-                           {event.createdAt?.seconds ? new Date(event.createdAt.seconds * 1000).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' }) : 'N/A'}
-                         </span>
-                      </div>
-                      <div className="col-span-2 text-sm text-gray-500 flex flex-col gap-0.5">
-                         <span className="text-gray-800">{event.date}</span>
-                         <span className="text-xs">
-                           {event.time ? new Date(event.time).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : ''}
-                           {event.endTime ? ` - ${new Date(event.endTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}` : ''}
-                         </span>
-                      </div>
-                      <div className="col-span-2 text-sm text-gray-500 flex flex-col gap-1 truncate text-left">
-                         <span className="truncate text-xs" title={event.location}>{event.location || '-'}</span>
-                         <span className={`text-[10px] font-bold w-fit px-2 py-0.5 rounded-full uppercase tracking-widest ${actualApprovedCount >= event.max_attendees && event.max_attendees > 0 ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"}`}>
-                            {actualApprovedCount} ĐÃ DUYỆT / {event.max_attendees || '∞'} TỔNG CHỖ
-                         </span>
-                      </div>
-                      <div className="col-span-1 flex justify-end gap-2">
+                          </div>
+                        </td>
+                        <td className="px-4 py-4 text-sm text-gray-500">
+                          <div className="flex flex-col gap-0.5">
+                             <span className="text-gray-800">{event.date}</span>
+                             <span className="text-xs">
+                               {event.time ? new Date(event.time).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : ''}
+                               {event.endTime ? ` - ${new Date(event.endTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}` : ''}
+                             </span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-4">
+                          <div className="flex flex-col gap-1 text-left text-sm text-gray-500">
+                             <span className="truncate text-xs" title={event.location}>{event.location || '-'}</span>
+                             <span className={`text-[10px] font-bold w-fit px-2 py-0.5 rounded-full uppercase tracking-widest ${actualApprovedCount >= event.max_attendees && event.max_attendees > 0 ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"}`}>
+                                {actualApprovedCount} ĐÃ DUYỆT / {event.max_attendees || '∞'} TỔNG CHỖ
+                             </span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-4 text-right">
+                          <div className="flex justify-end gap-2">
                         <button onClick={() => {
                            setSelectedEventForRegistrations(event);
                            fetchRegistrations(event.id);
@@ -1897,10 +1938,13 @@ export const Admin = () => {
                         <button onClick={() => deleteEvent(event.id)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
                           <Trash2 className="w-4 h-4" />
                         </button>
-                      </div>
-                    </div>
+                          </div>
+                        </td>
+                      </tr>
                     );
                   })}
+                   </tbody>
+                 </table>
                </div>
             </div>
             )
