@@ -1874,19 +1874,19 @@ export const Admin = () => {
                         <td className="px-4 py-4">
                           {event.code ? <div className="text-[10px] uppercase font-bold text-blue-600 bg-blue-50 px-2 py-0.5 inline-block rounded">{event.code}</div> : <span className="text-gray-300 text-xs">-</span>}
                         </td>
-                        <td className="px-4 py-4 font-medium text-gray-900 truncate">
+                        <td className="px-4 py-4 font-medium text-gray-900 max-w-[200px]">
                           <div className="flex flex-col gap-1">
                              <span className="truncate font-bold" title={event.title_vi}>{event.title_vi}</span>
                              <div className="text-[10px] text-gray-500 flex items-center gap-1">
                                <span className="capitalize font-semibold">{event.category === 'sachnhaminh' ? 'Sách Nhà Mình' : event.category === 'external' ? 'Sự kiện ngoài' : (event.category === 'school' ? 'Sách Nhà Mình' : event.category === 'culture' ? 'Sách Nhà Mình' : event.category || 'Mặc định')}</span>
                                <span>&gt;</span>
-                               <span className="text-blue-600 font-semibold">
+                               <span className="text-blue-600 font-semibold truncate">
                                  {subCategories.find(c => c.id === event.subCategory)?.name_vi || 'Mặc định'}
                                </span>
                              </div>
                           </div>
                         </td>
-                        <td className="px-4 py-4 text-xs text-gray-500">
+                        <td className="px-4 py-4 text-xs text-gray-500 max-w-[150px]">
                           <div className="flex flex-col gap-0.5">
                              <span className="text-gray-700 truncate" title={event.createdBy || 'Unknown'}>{event.createdBy || 'Unknown'}</span>
                              <span className="text-[10px] opacity-70">
@@ -1903,9 +1903,9 @@ export const Admin = () => {
                              </span>
                           </div>
                         </td>
-                        <td className="px-4 py-4">
+                        <td className="px-4 py-4 max-w-[200px]">
                           <div className="flex flex-col gap-1 text-left text-sm text-gray-500">
-                             <span className="truncate text-xs" title={event.location}>{event.location || '-'}</span>
+                             <span className="truncate text-xs block w-full" title={event.location}>{event.location || '-'}</span>
                              <span className={`text-[10px] font-bold w-fit px-2 py-0.5 rounded-full uppercase tracking-widest ${actualApprovedCount >= event.max_attendees && event.max_attendees > 0 ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"}`}>
                                 {actualApprovedCount} ĐÃ DUYỆT / {event.max_attendees || '∞'} TỔNG CHỖ
                              </span>
