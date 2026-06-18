@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { useAuth } from './lib/AuthContext';
 import { supabase } from './lib/supabase';
-import { FileText, Image as ImageIcon, LogOut, Edit3, Trash2, Plus, Calendar, Type, Users, BookOpen, Clock, MapPin, Star, UserPlus, Globe, LayoutDashboard, X, Bell, Mail, Phone, Check, Tag, Download, Menu } from 'lucide-react';
+import { parseDriveUrl } from './utils/driveHelpers';
+import { FileText, Image as ImageIcon, LogOut, Edit3, Trash2, Plus, Calendar, Type, Users, BookOpen, Clock, MapPin, Star, UserPlus, Globe, LayoutDashboard, X, Bell, Mail, Phone, Check, Tag, Download, Menu, Play } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { sendRegistrationEmail } from './utils/emailService';
 import * as XLSX from 'xlsx';
@@ -587,41 +588,79 @@ export const Admin = () => {
   const saveArticle = async (e: React.FormEvent) => {
     e.preventDefault();
     const payload = {
-      title_vi: editingArticle.title_vi,
-      title_en: editingArticle.title_en || editingArticle.title_vi,
-      summary_vi: editingArticle.summary_vi || '',
-      summary_en: editingArticle.summary_en || '',
-      content_vi: editingArticle.content_vi || '',
-      content_en: editingArticle.content_en || '',
-      date: editingArticle.date || '',
-      image: editingArticle.image || '',
-      category: editingArticle.category || 'school',
-      event_id: editingArticle.event_id || null
+      ...editingArticle,
+      image: parseDriveUrl(editingArticle.image || '', 'image')
     };
-    if (editingArticle.id === 'NEW') {
-      await supabase.from('articles').insert(payload);
-    } else {
-      await supabase.from('articles').update(payload).eq('id', editingArticle.id);
+    try {
+      if (editingArticle.id === 'NEW') {
+        const { id, ...rest } = payload;
+        const { error } = await supabase.from('articles').insert(rest);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('articles').update(payload).eq('id', editingArticle.id);
+        if (error) throw error;
+      }
+      setEditingArticle(null);
+      fetchArticles();
+      alert('Đã lưu bài viết!');
+    } catch (err: any) {
+      console.error('Lỗi khi lưu bài viết:', err);
+      alert('Lỗi khi lưu: ' + err.message);
     }
-    setEditingArticle(null);
-    fetchArticles();
   };
 
   const saveGallery = async (e: React.FormEvent) => {
     e.preventDefault();
-    const payload = {
-      type: editingGallery.type,
-      category: editingGallery.category,
-      url: editingGallery.url || '',
-      thumbnail: editingGallery.thumbnail || '',
-      title: editingGallery.title || '',
-      event_id: editingGallery.eventId ? editingGallery.eventId.toString() : null,
-      video_url: editingGallery.videoUrl || ''
-    };
-    if (editingGallery.id === 'NEW') {
-      await supabase.from('gallery').insert(payload);
+    if (editingGallery.type === 'video') {
+      const vUrls = (editingGallery.videoUrl || '').split('\n').map(u => u.trim()).filter(u => u);
+      if (vUrls.length > 0) {
+        const payloads = vUrls.map(u => ({
+          type: 'video',
+          url: parseDriveUrl(u, 'video'),
+          thumbnail: editingGallery.thumbnail ? parseDriveUrl(editingGallery.thumbnail, 'image') : getThumbnailForUrl(u, editingGallery.type as 'image' | 'video'),
+          title: editingGallery.title || '',
+          event_id: editingGallery.eventId ? editingGallery.eventId.toString() : null,
+          video_url: parseDriveUrl(u, 'video')
+        }));
+
+        if (editingGallery.id === 'NEW') {
+          await supabase.from('gallery').insert(payloads);
+        } else {
+          if (payloads.length === 1) {
+            await supabase.from('gallery').update(payloads[0]).eq('id', editingGallery.id);
+          } else {
+            await supabase.from('gallery').delete().eq('id', editingGallery.id);
+            await supabase.from('gallery').insert(payloads);
+          }
+        }
+      } else if (editingGallery.id !== 'NEW') {
+        await supabase.from('gallery').delete().eq('id', editingGallery.id);
+      }
     } else {
-      await supabase.from('gallery').update(payload).eq('id', editingGallery.id);
+      const iUrls = (editingGallery.url || '').split('\n').map(u => u.trim()).filter(u => u);
+      if (iUrls.length > 0) {
+        const payloads = iUrls.map(u => ({
+          type: editingGallery.type,
+          url: parseDriveUrl(u, 'image'),
+          thumbnail: editingGallery.thumbnail ? parseDriveUrl(editingGallery.thumbnail, 'image') : getThumbnailForUrl(u, editingGallery.type as 'image' | 'video'),
+          title: editingGallery.title || '',
+          event_id: editingGallery.eventId ? editingGallery.eventId.toString() : null,
+          video_url: parseDriveUrl(editingGallery.videoUrl || '', 'video')
+        }));
+
+        if (editingGallery.id === 'NEW') {
+          await supabase.from('gallery').insert(payloads);
+        } else {
+          if (payloads.length === 1) {
+            await supabase.from('gallery').update(payloads[0]).eq('id', editingGallery.id);
+          } else {
+            await supabase.from('gallery').delete().eq('id', editingGallery.id);
+            await supabase.from('gallery').insert(payloads);
+          }
+        }
+      } else if (editingGallery.id !== 'NEW') {
+        await supabase.from('gallery').delete().eq('id', editingGallery.id);
+      }
     }
     setEditingGallery(null);
     fetchGallery();
@@ -641,9 +680,10 @@ export const Admin = () => {
       }
     }
 
+    const { id: _removedId, galleryUrls: _removedGalleryUrls, videoUrls: _removedVideoUrls, ...eventProps } = editingEvent;
     const payload: any = {
-      title_vi: editingEvent.title_vi,
-      title_en: editingEvent.title_en || '',
+      ...eventProps,
+      image: parseDriveUrl(editingEvent.image || '', 'image'),
       date: formattedDate,
       time: editingEvent.time || '',
       end_time: editingEvent.endTime !== undefined ? editingEvent.endTime : (editingEvent.end_time || ''),
@@ -654,13 +694,13 @@ export const Admin = () => {
       description_en: editingEvent.description_en || '',
       content_vi: editingEvent.content_vi || '',
       content_en: editingEvent.content_en || '',
-      image: editingEvent.image || '',
       category: editingEvent.category || 'sachnhaminh',
       sub_category_id: editingEvent.subCategory !== undefined ? editingEvent.subCategory : (editingEvent.sub_category_id || null),
       max_attendees: Number(editingEvent.maxAttendees !== undefined ? editingEvent.maxAttendees : editingEvent.max_attendees) || 0,
       approved_count: Number(editingEvent.approvedCount !== undefined ? editingEvent.approvedCount : editingEvent.approved_count) || 0,
     };
     try {
+      let savedEventId;
       if (editingEvent.id === 'NEW') {
         const generatedCode = 'EVT-' + Math.random().toString(36).substr(2, 6).toUpperCase();
         const insertPayload = {
@@ -668,14 +708,51 @@ export const Admin = () => {
           code: payload.code || generatedCode,
           created_by: user?.email || 'Unknown'
         };
-        const { error } = await supabase.from('events').insert(insertPayload);
+        const { data, error } = await supabase.from('events').insert(insertPayload).select();
         if (error) throw error;
+        savedEventId = data[0].id;
         alert('Tạo sự kiện thành công!');
       } else {
         const { error } = await supabase.from('events').update(payload).eq('id', editingEvent.id);
         if (error) throw error;
+        savedEventId = editingEvent.id;
         alert('Cập nhật sự kiện thành công!');
       }
+
+      if (editingEvent.galleryUrls !== undefined || editingEvent.videoUrls !== undefined) {
+        if (editingEvent.galleryUrls !== undefined) {
+          await supabase.from('gallery').delete().eq('event_id', savedEventId).eq('type', 'image');
+          const urls = editingEvent.galleryUrls.split('\n').map((u: string) => u.trim()).filter((u: string) => u);
+          if (urls.length > 0) {
+            const galleryPayload = urls.map((url: string) => ({
+              type: 'image',
+              url: parseDriveUrl(url, 'image'),
+              thumbnail: getThumbnailForUrl(url, 'image'),
+              title: editingEvent.title_vi || '',
+              event_id: savedEventId
+            }));
+            await supabase.from('gallery').insert(galleryPayload);
+          }
+        }
+        
+        if (editingEvent.videoUrls !== undefined) {
+          await supabase.from('gallery').delete().eq('event_id', savedEventId).eq('type', 'video');
+          const vUrls = editingEvent.videoUrls.split('\n').map((u: string) => u.trim()).filter((u: string) => u);
+          if (vUrls.length > 0) {
+            const videoPayload = vUrls.map((url: string) => ({
+              type: 'video',
+              url: parseDriveUrl(url, 'video'),
+              thumbnail: getThumbnailForUrl(url, 'video'),
+              title: editingEvent.title_vi || '',
+              event_id: savedEventId
+            }));
+            await supabase.from('gallery').insert(videoPayload);
+          }
+        }
+        
+        fetchGallery();
+      }
+
       setEditingEvent(null);
       fetchEvents();
     } catch (error: any) {
@@ -1298,39 +1375,15 @@ export const Admin = () => {
                 </button>
              )}
              {activeTab === 'gallery' && (
-                <button onClick={() => setEditingGallery({ id: 'NEW', type: 'image', category: 'school', title: '' })} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors flex items-center gap-2 shadow-sm">
+                <button onClick={() => setEditingGallery({ id: 'NEW', type: 'image', title: '' })} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors flex items-center gap-2 shadow-sm">
                   <Plus className="w-4 h-4" /> {t.addMedia}
                 </button>
              )}
              
-          {activeTab === 'articleCategories' && (
-            <div className="bg-white border text-left border-gray-200 rounded-xl shadow-sm overflow-hidden">
-               <div className="grid grid-cols-12 gap-4 p-4 border-b border-gray-100 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  <div className="col-span-5">Tên (Tiếng Việt)</div>
-                  <div className="col-span-5">Name (English)</div>
-                  <div className="col-span-2 text-right">Actions</div>
-               </div>
-               <div className="divide-y divide-gray-100">
-                  {articleCategories.map(cat => (
-                    <div key={cat.id} className="grid grid-cols-12 gap-4 p-4 items-center hover:bg-gray-50 transition-colors">
-                      <div className="col-span-5 font-medium text-gray-900">{cat.name_vi}</div>
-                      <div className="col-span-5 text-gray-500">{cat.name_en}</div>
-                      <div className="col-span-2 flex justify-end gap-2">
-                        <button onClick={() => setEditingArticleCategory(cat)} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                          <Edit3 className="w-4 h-4" />
-                        </button>
-                        <button onClick={() => deleteArticleCategory(cat.id)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-               </div>
-            </div>
-          )}
+
 
           {activeTab === 'events' && (
-                <button onClick={() => setEditingEvent({ id: 'NEW', title_vi: '', category: 'sachnhaminh' })} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors flex items-center gap-2 shadow-sm">
+                <button onClick={() => setEditingEvent({ id: 'NEW', title_vi: '', category: 'sachnhaminh', galleryUrls: '', videoUrls: '' })} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors flex items-center gap-2 shadow-sm">
                   <Plus className="w-4 h-4" /> {t.addEvent}
                 </button>
              )}
@@ -1619,18 +1672,18 @@ export const Admin = () => {
               {gallery.map(item => (
                 <div key={item.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden group shadow-sm flex flex-col">
                   <div className="relative aspect-video bg-gray-100 flex items-center justify-center">
-                    {(item.url || item.thumbnail) ? (
-                      <img src={item.url || item.thumbnail} alt={item.title} className="w-full h-full object-cover" />
-                    ) : (
-                      <ImageIcon className="w-8 h-8 text-gray-300" />
-                    )}
-                    {item.type === 'video' && (
-                       <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                          <div className="w-10 h-10 rounded-full bg-white/90 shadow flex items-center justify-center">
-                             <div className="w-0 h-0 border-y-[6px] border-y-transparent border-l-[10px] border-l-blue-600 ml-1"></div>
-                          </div>
-                       </div>
-                    )}
+                     {item.type === 'video' ? (
+                        <>
+                           <iframe src={parseDriveUrl(item.video_url, 'video')} className="w-full h-full object-cover opacity-60" />
+                           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                              <div className="w-12 h-12 bg-white/90 rounded-full flex items-center justify-center shadow-lg">
+                                 <Play className="w-5 h-5 text-blue-600 ml-1" />
+                              </div>
+                           </div>
+                        </>
+                     ) : (
+                        <img src={parseDriveUrl(item.thumbnail || item.url, 'image')} alt={item.title} className="w-full h-full object-cover" />
+                     )}
                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
                       <button onClick={() => setEditingGallery({ ...item, eventId: item.event_id })} className="p-2 bg-white text-gray-800 rounded-full hover:bg-blue-50 transition-colors shadow-lg">
                         <Edit3 className="w-4 h-4" />
@@ -1643,7 +1696,6 @@ export const Admin = () => {
                   <div className="p-3">
                     <p className="font-medium text-sm text-gray-900 truncate mb-1" title={item.title}>{item.title || 'Untitled'}</p>
                     <div className="flex justify-between items-center text-xs text-gray-500">
-                       <span className="capitalize bg-gray-100 px-2 py-0.5 rounded">{item.category}</span>
                        <span className="uppercase text-[10px] font-bold tracking-wider">{item.type}</span>
                     </div>
                   </div>
@@ -1940,7 +1992,13 @@ export const Admin = () => {
                             </span>
                           )}
                         </button>
-                        <button onClick={() => setEditingEvent(event)} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                        <button onClick={() => {
+                          const eventGallery = gallery.filter(g => String(g.eventId || g.event_id) === String(event.id) && g.type === 'image');
+                          const eventVideos = gallery.filter(g => String(g.eventId || g.event_id) === String(event.id) && g.type === 'video');
+                          const galleryUrls = eventGallery.map(g => g.url).join('\n');
+                          const videoUrls = eventVideos.map(g => g.video_url || g.videoUrl || g.url).join('\n');
+                          setEditingEvent({ ...event, galleryUrls, videoUrls });
+                        }} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
                           <Edit3 className="w-4 h-4" />
                         </button>
                         <button onClick={() => deleteEvent(event.id)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
@@ -2467,7 +2525,7 @@ export const Admin = () => {
                         <input type="text" value={editingSlide.imageUrl || ''} onChange={e => setEditingSlide({...editingSlide, imageUrl: e.target.value})} className="w-full border border-gray-300 px-3 py-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="https://..." />
                         {editingSlide.imageUrl && (
                            <div className="mt-2 relative aspect-video w-48 rounded bg-gray-100 overflow-hidden border border-gray-200">
-                              <img src={editingSlide.imageUrl} alt="Preview" className="w-full h-full object-cover" />
+                              <img src={parseDriveUrl(editingSlide.imageUrl, 'image')} alt="Preview" className="w-full h-full object-cover" />
                            </div>
                         )}
                      </div>
@@ -2584,18 +2642,18 @@ export const Admin = () => {
                      {/* Media Settings */}
                      <div>
                         <h3 className="text-sm font-semibold text-gray-900 border-b pb-2 mb-4">Cover Image</h3>
-                        <div className="flex gap-4">
-                           {editingArticle.image && (
-                              <img src={editingArticle.image} alt="Preview" className="w-24 h-24 object-cover rounded-lg border border-gray-200" />
-                           )}
-                           <div className="flex-1 space-y-1">
-                              <label className="text-xs font-medium text-gray-500">Image URL</label>
-                              <div className="relative">
-                                 <ImageIcon className="w-4 h-4 absolute left-3 top-2.5 text-gray-400" />
-                                 <input placeholder="https://..." value={editingArticle.image || ''} onChange={e => setEditingArticle({...editingArticle, image: e.target.value})} className="w-full border border-gray-300 pl-9 pr-3 py-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                              </div>
+                        <div className="space-y-1">
+                           <label className="text-xs font-medium text-gray-500">Thumbnail Image URL (Google Drive) <span className="text-red-500">*</span></label>
+                           <div className="relative">
+                              <ImageIcon className="w-4 h-4 absolute left-3 top-2.5 text-gray-400" />
+                              <input required placeholder="https://drive.google.com/file/d/.../view" value={editingArticle.image || ''} onChange={e => setEditingArticle({...editingArticle, image: e.target.value})} className="w-full border border-gray-300 pl-9 pr-3 py-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
                            </div>
                         </div>
+                        {editingArticle.image && (
+                           <div className="mt-2 aspect-video bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
+                              <img src={parseDriveUrl(editingArticle.image, 'image')} alt="Preview" className="w-full h-full object-cover" />
+                           </div>
+                        )}
                      </div>
 
                      {/* Content Translation Tabs */}
@@ -2690,13 +2748,6 @@ export const Admin = () => {
                              <option value="video">Video</option>
                            </select>
                         </div>
-                        <div className="space-y-1">
-                           <label className="text-xs font-medium text-gray-500">Category</label>
-                           <select required value={editingGallery.category || 'school'} onChange={e => setEditingGallery({...editingGallery, category: e.target.value})} className="w-full border border-gray-300 px-3 py-2 text-sm rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                             <option value="school">School</option>
-                             <option value="culture">Culture</option>
-                           </select>
-                        </div>
                      </div>
 
                      <div className="space-y-1">
@@ -2705,17 +2756,29 @@ export const Admin = () => {
                      </div>
 
                      {editingGallery.type === 'image' && (
-                        <div className="space-y-3">
+                        <div className="space-y-4">
                            <div className="space-y-1">
-                              <label className="text-xs font-medium text-gray-500">Image URL <span className="text-red-500">*</span></label>
-                              <div className="relative">
-                                 <ImageIcon className="w-4 h-4 absolute left-3 top-2.5 text-gray-400" />
-                                 <input required placeholder="https://..." value={editingGallery.url || ''} onChange={e => setEditingGallery({...editingGallery, url: e.target.value})} className="w-full border border-gray-300 pl-9 pr-3 py-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                              </div>
+                              <label className="text-xs font-medium text-gray-500">Các link Hình ảnh / Thư mục Google Drive <span className="text-red-500">*</span></label>
+                              <textarea required placeholder="https://drive.google.com/file/d/.../view\nhttps://drive.google.com/drive/folders/..." value={editingGallery.url || ''} onChange={e => setEditingGallery({...editingGallery, url: e.target.value})} className="w-full border border-gray-300 px-3 py-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px]" />
+                              <p className="text-[10px] text-gray-400">Mỗi link một dòng. Hệ thống hỗ trợ link Google Drive (ảnh đơn hoặc cả thư mục).</p>
                            </div>
-                           {editingGallery.url && (
+                           <div className="space-y-1">
+                              <label className="text-xs font-medium text-gray-500">Thumbnail URL (Tùy chọn - Ảnh bìa cho thư mục)</label>
+                              <input placeholder="https://..." value={editingGallery.thumbnail || ''} onChange={e => setEditingGallery({...editingGallery, thumbnail: e.target.value})} className="w-full border border-gray-300 px-3 py-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                           </div>
+                           {editingGallery.thumbnail && (
                              <div className="mt-2 aspect-video bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
-                                <img src={editingGallery.url} alt="Preview" className="w-full h-full object-contain" />
+                                <img src={parseDriveUrl(editingGallery.thumbnail, 'image')} alt="Thumbnail Preview" className="w-full h-full object-cover" />
+                             </div>
+                           )}
+                           {editingGallery.url && editingGallery.url.split('\n').filter((u: string) => u.trim()).length === 1 && !editingGallery.url.includes('folders') && (
+                             <div className="mt-2 aspect-video bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
+                                <img src={parseDriveUrl(editingGallery.url.trim(), 'image')} alt="Preview" className="w-full h-full object-contain" />
+                             </div>
+                           )}
+                           {editingGallery.url && editingGallery.url.split('\n').filter((u: string) => u.trim()).length > 1 && (
+                             <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded border border-blue-100">
+                               Bạn đang nhập {editingGallery.url.split('\n').filter((u: string) => u.trim()).length} ảnh/thư mục.
                              </div>
                            )}
                         </div>
@@ -2724,17 +2787,27 @@ export const Admin = () => {
                      {editingGallery.type === 'video' && (
                         <div className="space-y-4">
                            <div className="space-y-1">
-                              <label className="text-xs font-medium text-gray-500">Video Embed URL <span className="text-red-500">*</span></label>
-                              <input required placeholder="e.g. YouTube embed link" value={editingGallery.videoUrl || ''} onChange={e => setEditingGallery({...editingGallery, videoUrl: e.target.value})} className="w-full border border-gray-300 px-3 py-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                              <p className="text-[10px] text-gray-400">Please use embed links format, not watch links.</p>
+                              <label className="text-xs font-medium text-gray-500">Các link Video YouTube / Google Drive <span className="text-red-500">*</span></label>
+                              <textarea required placeholder="https://www.youtube.com/watch?v=...\nhttps://drive.google.com/file/d/.../view" value={editingGallery.videoUrl || ''} onChange={e => setEditingGallery({...editingGallery, videoUrl: e.target.value})} className="w-full border border-gray-300 px-3 py-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px]" />
+                              <p className="text-[10px] text-gray-400">Mỗi link một dòng. Hệ thống hỗ trợ link YouTube và Google Drive.</p>
                            </div>
                            <div className="space-y-1">
-                              <label className="text-xs font-medium text-gray-500">Thumbnail URL</label>
+                              <label className="text-xs font-medium text-gray-500">Video Thumbnail URL (Tùy chọn - Dùng chung nếu thêm nhiều)</label>
                               <input placeholder="https://..." value={editingGallery.thumbnail || ''} onChange={e => setEditingGallery({...editingGallery, thumbnail: e.target.value})} className="w-full border border-gray-300 px-3 py-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
                            </div>
                            {editingGallery.thumbnail && (
                              <div className="mt-2 aspect-video bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
-                                <img src={editingGallery.thumbnail} alt="Thumbnail Preview" className="w-full h-full object-cover" />
+                                <img src={parseDriveUrl(editingGallery.thumbnail, 'image')} alt="Thumbnail Preview" className="w-full h-full object-cover" />
+                             </div>
+                           )}
+                           {editingGallery.videoUrl && editingGallery.videoUrl.split('\n').filter((u: string) => u.trim()).length === 1 && (
+                             <div className="mt-2 aspect-video bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
+                                <iframe src={parseDriveUrl(editingGallery.videoUrl.trim(), 'video')} className="w-full h-full object-cover" />
+                             </div>
+                           )}
+                           {editingGallery.videoUrl && editingGallery.videoUrl.split('\n').filter((u: string) => u.trim()).length > 1 && (
+                             <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded border border-blue-100">
+                               Bạn đang nhập {editingGallery.videoUrl.split('\n').filter((u: string) => u.trim()).length} video.
                              </div>
                            )}
                         </div>
@@ -2832,6 +2905,18 @@ export const Admin = () => {
                         </div>
                      </div>
                      <div className="space-y-1">
+                        <label className="text-xs font-medium text-gray-500">Thumbnail Image URL (Google Drive) <span className="text-red-500">*</span></label>
+                        <div className="relative">
+                           <ImageIcon className="w-4 h-4 absolute left-3 top-2.5 text-gray-400" />
+                           <input required placeholder="https://drive.google.com/file/d/.../view" value={editingEvent.image || ''} onChange={e => setEditingEvent({...editingEvent, image: e.target.value})} className="w-full border border-gray-300 pl-9 pr-3 py-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                        </div>
+                     </div>
+                     {editingEvent.image && (
+                        <div className="mt-2 aspect-video bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
+                           <img src={parseDriveUrl(editingEvent.image, 'image')} alt="Preview" className="w-full h-full object-cover" />
+                        </div>
+                     )}
+                     <div className="space-y-1">
                         <label className="text-xs font-medium text-gray-500">Event Code (Optional)</label>
                         <input placeholder="e.g. EVT-001" value={editingEvent.code || ''} onChange={e => setEditingEvent({...editingEvent, code: e.target.value})} className="w-full border border-gray-300 px-3 py-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase" />
                      </div>
@@ -2840,8 +2925,12 @@ export const Admin = () => {
                         <input placeholder="e.g. Main Hall" value={editingEvent.location || ''} onChange={e => setEditingEvent({...editingEvent, location: e.target.value})} className="w-full border border-gray-300 px-3 py-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
                      </div>
                      <div className="space-y-1">
-                        <label className="text-xs font-medium text-gray-500">Cover Image URL</label>
-                        <input placeholder="https://..." value={editingEvent.image || ''} onChange={e => setEditingEvent({...editingEvent, image: e.target.value})} className="w-full border border-gray-300 px-3 py-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                        <label className="text-xs font-medium text-gray-500">Các link ảnh nằm trong Album (Mỗi link Google Drive một dòng)</label>
+                        <textarea placeholder="https://drive.google.com/file/d/.../view" value={editingEvent.galleryUrls !== undefined ? editingEvent.galleryUrls : ''} onChange={e => setEditingEvent({...editingEvent, galleryUrls: e.target.value})} className="w-full border border-gray-300 p-3 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[120px]" />
+                     </div>
+                     <div className="space-y-1">
+                        <label className="text-xs font-medium text-gray-500">Các link Video YouTube / Google Drive (Mỗi link một dòng)</label>
+                        <textarea placeholder="https://www.youtube.com/watch?v=..." value={editingEvent.videoUrls !== undefined ? editingEvent.videoUrls : ''} onChange={e => setEditingEvent({...editingEvent, videoUrls: e.target.value})} className="w-full border border-gray-300 p-3 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px]" />
                      </div>
                      <div className="space-y-1">
                         <label className="text-xs font-medium text-gray-500">Description (VI)</label>
@@ -2910,11 +2999,16 @@ export const Admin = () => {
                               <input type="number" min="1" max="5" required value={editingBook.rating || 5} onChange={e => setEditingBook({...editingBook, rating: e.target.value})} className="w-full border border-gray-300 px-3 py-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
                            </div>
                            <div className="flex-1 space-y-1">
-                              <label className="text-xs font-medium text-gray-500">Cover URL</label>
+                              <label className="text-xs font-medium text-gray-500">Cover URL (Google Drive)</label>
                               <input value={editingBook.coverUrl || ''} onChange={e => setEditingBook({...editingBook, coverUrl: e.target.value})} className="w-full border border-gray-300 px-3 py-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
                            </div>
                         </div>
                      </div>
+                     {editingBook.coverUrl && (
+                        <div className="mt-2 w-32 aspect-[2/3] bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
+                           <img src={parseDriveUrl(editingBook.coverUrl, 'image')} alt="Preview" className="w-full h-full object-cover" />
+                        </div>
+                     )}
                      
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1">

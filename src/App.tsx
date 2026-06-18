@@ -1,8 +1,10 @@
 import { useState, createContext, useContext, useEffect, FormEvent, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from './lib/supabase';
 
 import { Admin } from './Admin';
+import { isDriveFolderUrl, parseDriveUrl, getThumbnailForUrl } from './utils/driveHelpers';
 import 'react-quill-new/dist/quill.snow.css';
 
 // Import local images
@@ -2149,13 +2151,31 @@ const NewsSection = () => {
   );
 };
 
+
+const ThumbnailWithHover = ({ 
+  isActive, thumbUrl, onClick, children 
+}: { 
+  isActive: boolean, thumbUrl: string, onClick: () => void, children: React.ReactNode 
+}) => {
+  return (
+    <div 
+      onClick={onClick}
+      className={`relative flex items-center gap-4 p-2 rounded-xl transition-all duration-300 text-left cursor-pointer ${isActive ? 'bg-black/5 border-black/10' : 'hover:bg-black/5 border-transparent'} border`}
+    >
+      {children}
+    </div>
+  );
+};
+
 const CultureChronicles = () => {
   const { config } = useContext(ThemeContext);
   const { t, lang } = useContext(LanguageContext);
   const { events, articles, gallery, subCategories } = useContext(DataContext);
 
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
-  const [activeSubTab, setActiveSubTab] = useState<'articles' | 'media'>('articles');
+  const [activeSubTab, setActiveSubTab] = useState<'articles' | 'images' | 'videos'>('articles');
+  const [activeModalVideoId, setActiveModalVideoId] = useState<string | null>(null);
+  const [activeModalImageFolderId, setActiveModalImageFolderId] = useState<string | null>(null);
   const [readingArticle, setReadingArticle] = useState<any | null>(null);
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -2434,14 +2454,24 @@ const CultureChronicles = () => {
                   {lang === 'vi' ? `Bài viết vệ tinh (${relatedArticles.length})` : `Satellite Articles (${relatedArticles.length})`}
                 </button>
                 <button
-                  onClick={() => setActiveSubTab('media')}
+                  onClick={() => setActiveSubTab('images')}
                   className={`pb-2 px-4 text-sm font-bold uppercase tracking-wider border-b-2 transition-all ${
-                    activeSubTab === 'media' 
+                    activeSubTab === 'images' 
                       ? `border-black text-black` 
                       : 'border-transparent text-gray-400 hover:text-black'
                   }`}
                 >
-                  {lang === 'vi' ? `Hình ảnh & Video (${relatedMedia.length})` : `Media Library (${relatedMedia.length})`}
+                  {lang === 'vi' ? `Hình ảnh (${relatedMedia.filter(m => m.type !== 'video').length})` : `Images (${relatedMedia.filter(m => m.type !== 'video').length})`}
+                </button>
+                <button
+                  onClick={() => setActiveSubTab('videos')}
+                  className={`pb-2 px-4 text-sm font-bold uppercase tracking-wider border-b-2 transition-all ${
+                    activeSubTab === 'videos' 
+                      ? `border-black text-black` 
+                      : 'border-transparent text-gray-400 hover:text-black'
+                  }`}
+                >
+                  {lang === 'vi' ? `Video (${relatedMedia.filter(m => m.type === 'video').length})` : `Videos (${relatedMedia.filter(m => m.type === 'video').length})`}
                 </button>
               </div>
 
@@ -2476,44 +2506,233 @@ const CultureChronicles = () => {
                   </div>
                 )}
 
-                {activeSubTab === 'media' && (
-                  <div className="grid grid-cols-2 gap-4">
-                    {relatedMedia.length > 0 ? (
-                      relatedMedia.map(item => {
-                        const isVideo = item.type === 'video';
-                        const directUrl = getDirectDriveUrl(item.url || item.video_url || item.videoUrl || '', isVideo ? 'video' : 'image');
+                {activeSubTab === 'images' && (() => {
+                  const relatedImages = relatedMedia.filter(m => m.type !== 'video');
+                  const imageFolders = relatedImages.filter(item => isDriveFolderUrl(item.url || ''));
+                  const directImages = relatedImages.filter(item => !isDriveFolderUrl(item.url || ''));
+                  
+                  return (
+                    <div className="flex flex-col gap-8">
+                      {imageFolders.length > 0 && (
+                        <div className="flex flex-col gap-6">
+                          {(() => {
+                            const mainItem = imageFolders.find(v => v.id === activeModalImageFolderId) || imageFolders[0];
+                            const mainUrl = parseDriveUrl(mainItem.url || '', 'folder');
+                            return (
+                              <div className="relative rounded-2xl overflow-hidden border border-black/5 bg-black/5 h-[400px] md:h-[500px] w-full shadow-md">
+                                <div className="w-full h-full relative overflow-hidden">
+                                  <iframe 
+                                    src={mainUrl} 
+                                    className="absolute top-0 left-0 border-none origin-top-left" 
+                                    style={{ width: '150%', height: '150%', transform: 'scale(0.666666)' }}
+                                    title={mainItem.title || 'Google Drive Folder'}
+                                  />
+                                </div>
+                              </div>
+                            );
+                          })()}
 
-                        return (
-                          <div key={item.id} className="relative group rounded-2xl overflow-hidden border border-black/5 aspect-video bg-black/[0.02]">
-                            {isVideo ? (
-                              <iframe 
-                                src={directUrl} 
-                                className="w-full h-full border-none" 
-                                allowFullScreen 
-                                title={item.title || 'Video'}
-                              />
-                            ) : (
-                              <a href={directUrl} target="_blank" rel="noopener noreferrer" className="block w-full h-full">
-                                <img src={directUrl} alt={item.title} className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-300" />
-                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          {imageFolders.length > 1 && (
+                            <div className="flex flex-col gap-2 max-h-[190px] overflow-y-auto pr-2 custom-scrollbar bg-white/50 rounded-xl p-2 border border-black/5">
+                              {imageFolders.map(item => {
+                                const isActive = activeModalImageFolderId === item.id || (!activeModalImageFolderId && item.id === imageFolders[0].id);
+                                const thumbUrl = item.thumbnail || item.thumbnailUrl || getThumbnailForUrl(item.url || '', 'image') || '';
+                                return (
+                                  <ThumbnailWithHover 
+                                    key={item.id}
+                                    isActive={isActive}
+                                    thumbUrl={thumbUrl}
+                                    onClick={() => setActiveModalImageFolderId(item.id)}
+                                  >
+                                    <div className="w-28 shrink-0 aspect-video relative group">
+                                      <div className="w-full h-full rounded-lg overflow-hidden relative bg-black/5 border border-black/5">
+                                        {thumbUrl !== '' ? (
+                                          <img src={thumbUrl} alt="thumbnail" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                                        ) : (
+                                          <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
+                                             <ImageIcon className="w-5 h-5 opacity-40" />
+                                          </div>
+                                        )}
+                                        {isActive && (
+                                          <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[1px]">
+                                            <div className="w-6 h-6 flex items-center justify-center rounded-full bg-blue-500 text-white shadow-lg">
+                                              <ImageIcon className="w-3 h-3 ml-0.5" />
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                    
+                                    <div className="flex-1 min-w-0 py-1">
+                                      <h4 className={`text-sm font-semibold leading-snug line-clamp-2 ${isActive ? 'text-blue-600' : 'text-gray-800'}`}>
+                                        {item.title || (lang === 'vi' ? 'Thư mục hình ảnh' : 'Image Folder')}
+                                      </h4>
+                                    </div>
+                                  </ThumbnailWithHover>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {directImages.length > 0 && (
+                        <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 md:gap-4">
+                          {directImages.map((item, idx) => {
+                            const directUrl = parseDriveUrl(item.url || '', 'image');
+                            return (
+                              <button key={item.id} onClick={() => setMediaLightbox({ isOpen: true, index: idx, items: directImages })} className="block w-full aspect-square md:aspect-video relative cursor-pointer group/btn rounded-2xl overflow-hidden border border-black/5 bg-black/[0.02]">
+                                <img src={directUrl} alt={item.title || 'Image'} className="w-full h-full object-cover transition-transform group-hover/btn:scale-105 duration-300" referrerPolicy="no-referrer" />
+                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/btn:opacity-100 transition-opacity flex items-center justify-center">
                                   <ExternalLink className="w-6 h-6 text-white" />
                                 </div>
-                              </a>
-                            )}
-                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2 text-white text-[10px] font-medium truncate">
-                              {item.title || (isVideo ? 'Video' : 'Hình ảnh')}
+                                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2 text-white text-[10px] font-medium truncate">
+                                  {item.title || 'Hình ảnh'}
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {relatedImages.length === 0 && (
+                        <div className="col-span-full py-12 text-center text-gray-400 flex flex-col items-center">
+                          <ImageIcon className="w-10 h-10 opacity-30 mb-2" />
+                          <p className="text-sm">{lang === 'vi' ? 'Chưa có tài liệu hình ảnh.' : 'No image items for this event.'}</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {activeSubTab === 'videos' && (() => {
+                  const relatedVideos = relatedMedia.filter(m => m.type === 'video');
+                  return (
+                    <div className="flex flex-col gap-6">
+                      {relatedVideos.length > 0 ? (
+                        <>
+                          {(() => {
+                            const mainItem = relatedVideos.find(v => v.id === activeModalVideoId) || relatedVideos[0];
+                            const isMainFolder = isDriveFolderUrl(mainItem.video_url || mainItem.videoUrl || mainItem.url || '');
+                            const mainUrl = parseDriveUrl(mainItem.video_url || mainItem.videoUrl || mainItem.url || '', isMainFolder ? 'folder' : 'video');
+                            return (
+                              <div className={`relative rounded-2xl overflow-hidden border border-black/5 bg-black/5 ${isMainFolder ? 'h-[400px] md:h-[500px]' : 'aspect-video'} w-full shadow-md`}>
+                                {isMainFolder ? (
+                                  <div className="w-full h-full relative overflow-hidden">
+                                    <iframe 
+                                      src={mainUrl} 
+                                      className="absolute top-0 left-0 border-none origin-top-left" 
+                                      style={{ width: '150%', height: '150%', transform: 'scale(0.666666)' }}
+                                      title={mainItem.title || 'Google Drive Folder'}
+                                    />
+                                  </div>
+                                ) : (
+                                  <iframe 
+                                    src={mainUrl} 
+                                    className="w-full h-full border-none" 
+                                    allowFullScreen 
+                                    title={mainItem.title || 'Video'}
+                                  />
+                                )}
+                              </div>
+                            );
+                          })()}
+
+                          {relatedVideos.length > 2 && (
+                            <div className="flex flex-col gap-2 max-h-[190px] overflow-y-auto pr-2 custom-scrollbar bg-white/50 rounded-xl p-2 border border-black/5">
+                              {relatedVideos.map(item => {
+                                const isActive = activeModalVideoId === item.id || (!activeModalVideoId && item.id === relatedVideos[0].id);
+                                const isFolder = isDriveFolderUrl(item.video_url || item.videoUrl || item.url || '');
+                                const thumbUrl = item.thumbnail || item.thumbnailUrl || getThumbnailForUrl(item.video_url || item.videoUrl || item.url || '', 'video') || '';
+                                return (
+                                  <ThumbnailWithHover 
+                                    key={item.id}
+                                    isActive={isActive}
+                                    thumbUrl={thumbUrl}
+                                    onClick={() => setActiveModalVideoId(item.id)}
+                                  >
+                                    <div className="w-28 shrink-0 aspect-video relative group">
+                                      <div className="w-full h-full rounded-lg overflow-hidden relative bg-black/5 border border-black/5">
+                                        {thumbUrl !== '' ? (
+                                          <img src={thumbUrl} alt="thumbnail" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                                        ) : (
+                                          <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
+                                            {isFolder ? <ImageIcon className="w-5 h-5 opacity-40" /> : <Play className="w-5 h-5 opacity-40" />}
+                                          </div>
+                                        )}
+                                        {isActive && (
+                                          <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[1px]">
+                                            <div className="w-6 h-6 flex items-center justify-center rounded-full bg-blue-500 text-white shadow-lg">
+                                              <Play className="w-3 h-3 ml-0.5" />
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                    
+                                    <div className="flex-1 min-w-0 py-1">
+                                      <h4 className={`text-sm font-semibold leading-snug line-clamp-2 ${isActive ? 'text-blue-600' : 'text-gray-800'}`}>
+                                        {item.title || (lang === 'vi' ? (isFolder ? 'Thư mục video' : 'Video') : 'Video')}
+                                      </h4>
+                                    </div>
+                                  </ThumbnailWithHover>
+                                );
+                              })}
                             </div>
-                          </div>
-                        );
-                      })
-                    ) : (
-                      <div className="col-span-full py-12 text-center text-gray-400 flex flex-col items-center">
-                        <ImageIcon className="w-10 h-10 opacity-30 mb-2" />
-                        <p className="text-sm">{lang === 'vi' ? 'Chưa có tài liệu hình ảnh hoặc video.' : 'No media items for this event.'}</p>
-                      </div>
-                    )}
-                  </div>
-                )}
+                          )}
+                          
+                          {relatedVideos.length === 2 && (
+                            <div className="flex flex-col gap-2">
+                              {relatedVideos.map(item => {
+                                const isActive = activeModalVideoId === item.id || (!activeModalVideoId && item.id === relatedVideos[0].id);
+                                const isFolder = isDriveFolderUrl(item.video_url || item.videoUrl || item.url || '');
+                                const thumbUrl = item.thumbnail || item.thumbnailUrl || getThumbnailForUrl(item.video_url || item.videoUrl || item.url || '', 'video') || '';
+                                return (
+                                  <ThumbnailWithHover 
+                                    key={item.id}
+                                    isActive={isActive}
+                                    thumbUrl={thumbUrl}
+                                    onClick={() => setActiveModalVideoId(item.id)}
+                                  >
+                                    <div className="w-28 shrink-0 aspect-video relative group">
+                                      <div className="w-full h-full rounded-lg overflow-hidden relative bg-black/5 border border-black/5">
+                                        {thumbUrl !== '' ? (
+                                          <img src={thumbUrl} alt="thumbnail" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                                        ) : (
+                                          <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
+                                            {isFolder ? <ImageIcon className="w-5 h-5 opacity-40" /> : <Play className="w-5 h-5 opacity-40" />}
+                                          </div>
+                                        )}
+                                        {isActive && (
+                                          <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[1px]">
+                                            <div className="w-6 h-6 flex items-center justify-center rounded-full bg-blue-500 text-white shadow-lg">
+                                              <Play className="w-3 h-3 ml-0.5" />
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                    
+                                    <div className="flex-1 min-w-0 py-1">
+                                      <h4 className={`text-sm font-semibold leading-snug line-clamp-2 ${isActive ? 'text-blue-600' : 'text-gray-800'}`}>
+                                        {item.title || (lang === 'vi' ? (isFolder ? 'Thư mục video' : 'Video') : 'Video')}
+                                      </h4>
+                                    </div>
+                                  </ThumbnailWithHover>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <div className="py-12 text-center text-gray-400 flex flex-col items-center">
+                          <Play className="w-10 h-10 opacity-30 mb-2" />
+                          <p className="text-sm">{lang === 'vi' ? 'Chưa có tài liệu video.' : 'No video items for this event.'}</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           ) : (
