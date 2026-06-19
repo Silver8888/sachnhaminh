@@ -66,6 +66,7 @@ export const Admin = () => {
   const [instagramUrl, setInstagramUrl] = useState('');
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [isSettingsLoading, setIsSettingsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'articles' | 'gallery' | 'events' | 'books' | 'roles' | 'slides' | 'contacts' | 'settings' | 'categories' | 'articleCategories' | 'checkin' | 'crm'>('dashboard');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -438,6 +439,24 @@ export const Admin = () => {
       if (unsubscribeRegistrations) unsubscribeRegistrations();
     };
   }, [isStaff]);
+
+  useEffect(() => {
+    supabase.from('site_settings').select('*').eq('id', 'global').single().then(({data}) => {
+      if (data) {
+        if (data.theme) setSiteTheme(data.theme);
+        if (data.font) setSiteFont(data.font);
+        if (data.site_name) setSiteName(data.site_name);
+        if (data.site_logo) setSiteLogo(data.site_logo);
+        if (data.contact_address) setContactAddress(data.contact_address);
+        if (data.contact_phone) setContactPhone(data.contact_phone);
+        if (data.facebook_url) setFacebookUrl(data.facebook_url);
+        if (data.instagram_url) setInstagramUrl(data.instagram_url);
+        if (data.custom_color) setCustomColor(data.custom_color);
+        if (data.custom_font) setCustomFont(data.custom_font);
+      }
+      setIsSettingsLoading(false);
+    });
+  }, []);
 
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
@@ -2575,12 +2594,18 @@ export const Admin = () => {
                       <h2 className="text-xl font-bold text-gray-800">Cấu hình Web</h2>
                       <p className="text-sm text-gray-500 mt-1">Quản lý giao diện và thông tin trang web</p>
                    </div>
-                   <button onClick={saveSettings} disabled={isSavingSettings} className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-medium transition-colors flex items-center gap-2">
+                   <button onClick={saveSettings} disabled={isSavingSettings || isSettingsLoading} className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-medium transition-colors flex items-center gap-2">
                       <Save className="w-5 h-5" />
                       {isSavingSettings ? 'Đang lưu...' : 'Lưu Thay Đổi'}
                    </button>
                 </div>
 
+                {isSettingsLoading ? (
+                   <div className="flex justify-center items-center py-20">
+                      <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                      <span className="ml-3 text-gray-500">Đang tải cấu hình...</span>
+                   </div>
+                ) : (
                 <div className="space-y-8">
                    {/* Theme */}
                    <div>
@@ -2632,12 +2657,12 @@ export const Admin = () => {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                          <div>
                             <label className="block text-xs font-medium text-gray-500 mb-1">Tên Website</label>
-                            <input type="text" value={siteName} onChange={e => setSiteName(e.target.value)} className="w-full border border-gray-300 px-3 py-2 text-sm rounded-lg" />
+                            <input type="text" autoComplete="off" value={siteName} onChange={e => setSiteName(e.target.value)} className="w-full border border-gray-300 px-3 py-2 text-sm rounded-lg" />
                          </div>
                          <div>
                             <label className="block text-xs font-medium text-gray-500 mb-1">URL Logo hoặc Tải lên</label>
                             <div className="flex gap-2">
-                               <input type="text" value={siteLogo} onChange={e => setSiteLogo(e.target.value)} placeholder="Dán link ảnh hoặc tải lên..." className="flex-1 border border-gray-300 px-3 py-2 text-sm rounded-lg" />
+                               <input type="text" autoComplete="off" value={siteLogo} onChange={e => setSiteLogo(e.target.value)} placeholder="Dán link ảnh hoặc tải lên..." className="flex-1 border border-gray-300 px-3 py-2 text-sm rounded-lg" />
                                <input type="file" id="logo-upload" accept="image/*" onChange={handleLogoUpload} className="hidden" />
                                <label htmlFor="logo-upload" className="cursor-pointer bg-gray-100 hover:bg-gray-200 border border-gray-300 px-3 py-2 text-sm font-medium rounded-lg text-gray-700 flex items-center gap-2 whitespace-nowrap">
                                   {isUploadingLogo ? 'Đang xử lý...' : 'Tải lên'}
@@ -2658,23 +2683,24 @@ export const Admin = () => {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                          <div>
                             <label className="block text-xs font-medium text-gray-500 mb-1">Địa chỉ</label>
-                            <input type="text" value={contactAddress} onChange={e => setContactAddress(e.target.value)} className="w-full border border-gray-300 px-3 py-2 text-sm rounded-lg" />
+                            <input type="text" autoComplete="off" value={contactAddress} onChange={e => setContactAddress(e.target.value)} className="w-full border border-gray-300 px-3 py-2 text-sm rounded-lg" />
                          </div>
                          <div>
                             <label className="block text-xs font-medium text-gray-500 mb-1">Điện thoại</label>
-                            <input type="text" value={contactPhone} onChange={e => setContactPhone(e.target.value)} className="w-full border border-gray-300 px-3 py-2 text-sm rounded-lg" />
+                            <input type="text" autoComplete="off" value={contactPhone} onChange={e => setContactPhone(e.target.value)} className="w-full border border-gray-300 px-3 py-2 text-sm rounded-lg" />
                          </div>
                          <div>
                             <label className="block text-xs font-medium text-gray-500 mb-1">Facebook URL</label>
-                            <input type="text" value={facebookUrl} onChange={e => setFacebookUrl(e.target.value)} className="w-full border border-gray-300 px-3 py-2 text-sm rounded-lg" />
+                            <input type="text" autoComplete="off" value={facebookUrl} onChange={e => setFacebookUrl(e.target.value)} className="w-full border border-gray-300 px-3 py-2 text-sm rounded-lg" />
                          </div>
                          <div>
                             <label className="block text-xs font-medium text-gray-500 mb-1">Instagram URL</label>
-                            <input type="text" value={instagramUrl} onChange={e => setInstagramUrl(e.target.value)} className="w-full border border-gray-300 px-3 py-2 text-sm rounded-lg" />
+                            <input type="text" autoComplete="off" value={instagramUrl} onChange={e => setInstagramUrl(e.target.value)} className="w-full border border-gray-300 px-3 py-2 text-sm rounded-lg" />
                          </div>
                       </div>
                    </div>
                 </div>
+                )}
              </div>
           )}
 
