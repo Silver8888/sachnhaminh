@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { useAuth } from './lib/AuthContext';
 import { supabase } from './lib/supabase';
 import { parseDriveUrl } from './utils/driveHelpers';
-import { FileText, Image as ImageIcon, LogOut, Edit3, Trash2, Plus, Calendar, Type, Users, BookOpen, Clock, MapPin, Star, UserPlus, Globe, LayoutDashboard, X, Bell, Mail, Phone, Check, Tag, Download, Menu, Play } from 'lucide-react';
+import { FileText, Image as ImageIcon, LogOut, Edit3, Trash2, Plus, Calendar, Type, Users, BookOpen, Clock, MapPin, Star, UserPlus, Globe, LayoutDashboard, X, Bell, Mail, Phone, Check, Tag, Download, Menu, Play , Save, Settings} from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { sendRegistrationEmail } from './utils/emailService';
 import * as XLSX from 'xlsx';
@@ -54,7 +54,19 @@ export const Admin = () => {
   const [articleCategories, setArticleCategories] = useState<any[]>([]);
   
   const [adminLang, setAdminLang] = useState<'vi' | 'en'>('vi');
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'articles' | 'gallery' | 'events' | 'books' | 'roles' | 'slides' | 'contacts' | 'categories' | 'articleCategories' | 'checkin' | 'crm'>('dashboard');
+  const [customColor, setCustomColor] = useState('#8B2B2B');
+  const [customFont, setCustomFont] = useState('Inter');
+  const [siteTheme, setSiteTheme] = useState('pastelRed');
+  const [siteFont, setSiteFont] = useState('serif');
+  const [siteName, setSiteName] = useState('Sách nhà Mình');
+  const [siteLogo, setSiteLogo] = useState('');
+  const [contactAddress, setContactAddress] = useState('123 Văn Chương, Quận Tri Thức, TP. Hồ Chí Minh');
+  const [contactPhone, setContactPhone] = useState('090 457 03 83');
+  const [facebookUrl, setFacebookUrl] = useState('https://www.facebook.com/sachnhaminh');
+  const [instagramUrl, setInstagramUrl] = useState('');
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'articles' | 'gallery' | 'events' | 'books' | 'roles' | 'slides' | 'contacts' | 'settings' | 'categories' | 'articleCategories' | 'checkin' | 'crm'>('dashboard');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const [crmSearch, setCrmSearch] = useState('');
@@ -609,61 +621,127 @@ export const Admin = () => {
     }
   };
 
+  
+  
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    if (file.size > 2 * 1024 * 1024) {
+      alert('Kích thước logo quá lớn. Vui lòng chọn ảnh dưới 2MB để tối ưu.');
+      return;
+    }
+
+    setIsUploadingLogo(true);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setSiteLogo(reader.result as string);
+      setIsUploadingLogo(false);
+    };
+    reader.onerror = () => {
+      alert('Có lỗi xảy ra khi đọc file.');
+      setIsUploadingLogo(false);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const saveSettings = async () => {
+    setIsSavingSettings(true);
+    try {
+      const { error } = await supabase.from('site_settings').upsert({ 
+        id: 'global', 
+        theme: siteTheme, 
+        font: siteFont, 
+        site_name: siteName, 
+        site_logo: siteLogo,
+        contact_address: contactAddress,
+        contact_phone: contactPhone,
+        facebook_url: facebookUrl,
+        instagram_url: instagramUrl,
+        custom_color: customColor,
+        custom_font: customFont
+      });
+      if (error) throw error;
+      alert('Đã lưu cấu hình! Vui lòng tải lại trang (F5) để thấy thay đổi.');
+    } catch (e: any) {
+      alert('Lỗi khi lưu cấu hình: ' + e.message);
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
+
   const saveGallery = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingGallery.type === 'video') {
-      const vUrls = (editingGallery.videoUrl || '').split('\n').map(u => u.trim()).filter(u => u);
-      if (vUrls.length > 0) {
-        const payloads = vUrls.map(u => ({
-          type: 'video',
-          url: parseDriveUrl(u, 'video'),
-          thumbnail: editingGallery.thumbnail ? parseDriveUrl(editingGallery.thumbnail, 'image') : getThumbnailForUrl(u, editingGallery.type as 'image' | 'video'),
-          title: editingGallery.title || '',
-          event_id: editingGallery.eventId ? editingGallery.eventId.toString() : null,
-          video_url: parseDriveUrl(u, 'video')
-        }));
+    try {
+      if (editingGallery.type === 'video') {
+        const vUrls = (editingGallery.videoUrl || '').split('\n').map(u => u.trim()).filter(u => u);
+        if (vUrls.length === 0) {
+          alert('Vui lòng nhập Các link Video YouTube / Google Drive!');
+          return;
+        }
+        if (vUrls.length > 0) {
+          const payloads = vUrls.map(u => ({
+            type: 'video',
+            url: parseDriveUrl(u, 'video'),
+            thumbnail: (editingGallery.thumbnail && !isDriveFolderUrl(editingGallery.thumbnail)) ? parseDriveUrl(editingGallery.thumbnail, 'image') : getThumbnailForUrl(u, editingGallery.type as 'image' | 'video'),
+            title: editingGallery.title || '',
+            event_id: editingGallery.eventId ? editingGallery.eventId.toString() : null,
+            video_url: parseDriveUrl(u, 'video')
+          }));
 
-        if (editingGallery.id === 'NEW') {
-          await supabase.from('gallery').insert(payloads);
-        } else {
-          if (payloads.length === 1) {
-            await supabase.from('gallery').update(payloads[0]).eq('id', editingGallery.id);
+          if (editingGallery.id === 'NEW') {
+            const { error } = await supabase.from('gallery').insert(payloads);
+            if (error) throw error;
           } else {
-            await supabase.from('gallery').delete().eq('id', editingGallery.id);
-            await supabase.from('gallery').insert(payloads);
+            if (payloads.length === 1) {
+              const { error } = await supabase.from('gallery').update(payloads[0]).eq('id', editingGallery.id);
+              if (error) throw error;
+            } else {
+              const { error: err1 } = await supabase.from('gallery').delete().eq('id', editingGallery.id);
+              if (err1) throw err1;
+              const { error: err2 } = await supabase.from('gallery').insert(payloads);
+              if (err2) throw err2;
+            }
           }
         }
-      } else if (editingGallery.id !== 'NEW') {
-        await supabase.from('gallery').delete().eq('id', editingGallery.id);
-      }
-    } else {
-      const iUrls = (editingGallery.url || '').split('\n').map(u => u.trim()).filter(u => u);
-      if (iUrls.length > 0) {
-        const payloads = iUrls.map(u => ({
-          type: editingGallery.type,
-          url: parseDriveUrl(u, 'image'),
-          thumbnail: editingGallery.thumbnail ? parseDriveUrl(editingGallery.thumbnail, 'image') : getThumbnailForUrl(u, editingGallery.type as 'image' | 'video'),
-          title: editingGallery.title || '',
-          event_id: editingGallery.eventId ? editingGallery.eventId.toString() : null,
-          video_url: parseDriveUrl(editingGallery.videoUrl || '', 'video')
-        }));
+      } else {
+        const iUrls = (editingGallery.url || '').split('\n').map(u => u.trim()).filter(u => u);
+        if (iUrls.length === 0) {
+          alert('Vui lòng nhập Các link Hình ảnh / Thư mục Google Drive!');
+          return;
+        }
+        if (iUrls.length > 0) {
+          const payloads = iUrls.map(u => ({
+            type: editingGallery.type,
+            url: parseDriveUrl(u, 'image'),
+            thumbnail: (editingGallery.thumbnail && !isDriveFolderUrl(editingGallery.thumbnail)) ? parseDriveUrl(editingGallery.thumbnail, 'image') : getThumbnailForUrl(u, editingGallery.type as 'image' | 'video'),
+            title: editingGallery.title || '',
+            event_id: editingGallery.eventId ? editingGallery.eventId.toString() : null,
+            video_url: parseDriveUrl(editingGallery.videoUrl || '', 'video')
+          }));
 
-        if (editingGallery.id === 'NEW') {
-          await supabase.from('gallery').insert(payloads);
-        } else {
-          if (payloads.length === 1) {
-            await supabase.from('gallery').update(payloads[0]).eq('id', editingGallery.id);
+          if (editingGallery.id === 'NEW') {
+            const { error } = await supabase.from('gallery').insert(payloads);
+            if (error) throw error;
           } else {
-            await supabase.from('gallery').delete().eq('id', editingGallery.id);
-            await supabase.from('gallery').insert(payloads);
+            if (payloads.length === 1) {
+              const { error } = await supabase.from('gallery').update(payloads[0]).eq('id', editingGallery.id);
+              if (error) throw error;
+            } else {
+              const { error: err1 } = await supabase.from('gallery').delete().eq('id', editingGallery.id);
+              if (err1) throw err1;
+              const { error: err2 } = await supabase.from('gallery').insert(payloads);
+              if (err2) throw err2;
+            }
           }
         }
-      } else if (editingGallery.id !== 'NEW') {
-        await supabase.from('gallery').delete().eq('id', editingGallery.id);
       }
+      setEditingGallery(null);
+      fetchGallery();
+    } catch (err: any) {
+      console.error('Lỗi khi lưu thư viện:', err);
+      alert('Lỗi khi lưu: ' + (err.message || JSON.stringify(err)));
     }
-    setEditingGallery(null);
-    fetchGallery();
   };
 
   const saveEvent = async (e: React.FormEvent) => {
@@ -1328,6 +1406,13 @@ export const Admin = () => {
                <Users className="w-5 h-5" />
                {t.roles}
              </button>
+             <button 
+               onClick={() => { setActiveTab('settings'); setMobileMenuOpen(false); }} 
+               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'settings' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}
+             >
+               <Settings className="w-5 h-5" /> Cấu Hình Web
+             </button>
+
           </div>
         </div>
         <div className="p-4 border-t border-gray-100">
@@ -2482,6 +2567,117 @@ export const Admin = () => {
               </div>
             </div>
           )}
+
+          {activeTab === 'settings' && (
+             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                <div className="mb-6 flex justify-between items-center">
+                   <div>
+                      <h2 className="text-xl font-bold text-gray-800">Cấu hình Web</h2>
+                      <p className="text-sm text-gray-500 mt-1">Quản lý giao diện và thông tin trang web</p>
+                   </div>
+                   <button onClick={saveSettings} disabled={isSavingSettings} className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-medium transition-colors flex items-center gap-2">
+                      <Save className="w-5 h-5" />
+                      {isSavingSettings ? 'Đang lưu...' : 'Lưu Thay Đổi'}
+                   </button>
+                </div>
+
+                <div className="space-y-8">
+                   {/* Theme */}
+                   <div>
+                      <h3 className="font-semibold text-gray-800 mb-4">Giao diện (Theme) & Màu sắc</h3>
+                      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                         {[
+                            { id: 'classic', name: 'Classic', bg: 'bg-[#FCFAF7]', text: 'text-[#000000]' },
+                            { id: 'pastelRed', name: 'Pastel Red', bg: 'bg-[#FFF5F5]', text: 'text-[#8B2B2B]' },
+                            { id: 'modern', name: 'Modern', bg: 'bg-[#F3F4F6]', text: 'text-[#1F2937]' },
+                            { id: 'dark', name: 'Dark Mode', bg: 'bg-[#121212]', text: 'text-[#FFFFFF]' },
+                            { id: 'custom', name: 'Tùy chỉnh', bg: 'bg-gradient-to-r from-purple-500 to-pink-500', text: 'text-white' }
+                         ].map(theme => (
+                            <div key={theme.id} onClick={() => setSiteTheme(theme.id)} className={`cursor-pointer rounded-xl border-2 overflow-hidden transition-all ${siteTheme === theme.id ? 'border-blue-500 shadow-md ring-2 ring-blue-200' : 'border-gray-200 hover:border-gray-300'}`}>
+                               <div className={`h-16 w-full ${theme.bg} flex items-center justify-center`}>
+                                  <span className={`font-semibold text-sm ${theme.text}`}>Aa</span>
+                               </div>
+                               <div className="p-2 text-center text-xs font-medium text-gray-700 bg-white">{theme.name}</div>
+                            </div>
+                         ))}
+                      </div>
+                      {siteTheme === 'custom' && (
+                         <div className="mt-4 flex items-center gap-4 bg-gray-50 p-4 rounded-xl">
+                            <div>
+                               <label className="block text-xs font-medium text-gray-500 mb-1">Màu chủ đạo (Hex)</label>
+                               <div className="flex gap-2">
+                                  <input type="color" value={customColor} onChange={e => setCustomColor(e.target.value)} className="w-10 h-10 rounded cursor-pointer" />
+                                  <input type="text" value={customColor} onChange={e => setCustomColor(e.target.value)} className="border border-gray-300 px-3 py-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase w-28" />
+                               </div>
+                            </div>
+                            <div className="flex-1">
+                               <label className="block text-xs font-medium text-gray-500 mb-1">Font chữ Tiếng Việt (Google Fonts)</label>
+                               <select value={customFont} onChange={e => setCustomFont(e.target.value)} className="w-full border border-gray-300 px-3 py-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                  <option value="Inter">Inter (Mặc định - Hiện đại)</option>
+                                  <option value="Roboto">Roboto (Phổ biến)</option>
+                                  <option value="Montserrat">Montserrat (Sang trọng)</option>
+                                  <option value="Open Sans">Open Sans (Dễ đọc)</option>
+                                  <option value="Lora">Lora (Cổ điển - Có chân)</option>
+                                  <option value="Playfair Display">Playfair Display (Nghệ thuật)</option>
+                                  <option value="Nunito">Nunito (Bo tròn mềm mại)</option>
+                               </select>
+                            </div>
+                         </div>
+                      )}
+                   </div>
+
+                   {/* Info */}
+                   <div>
+                      <h3 className="font-semibold text-gray-800 mb-4">Thông tin Website</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                         <div>
+                            <label className="block text-xs font-medium text-gray-500 mb-1">Tên Website</label>
+                            <input type="text" value={siteName} onChange={e => setSiteName(e.target.value)} className="w-full border border-gray-300 px-3 py-2 text-sm rounded-lg" />
+                         </div>
+                         <div>
+                            <label className="block text-xs font-medium text-gray-500 mb-1">URL Logo hoặc Tải lên</label>
+                            <div className="flex gap-2">
+                               <input type="text" value={siteLogo} onChange={e => setSiteLogo(e.target.value)} placeholder="Dán link ảnh hoặc tải lên..." className="flex-1 border border-gray-300 px-3 py-2 text-sm rounded-lg" />
+                               <input type="file" id="logo-upload" accept="image/*" onChange={handleLogoUpload} className="hidden" />
+                               <label htmlFor="logo-upload" className="cursor-pointer bg-gray-100 hover:bg-gray-200 border border-gray-300 px-3 py-2 text-sm font-medium rounded-lg text-gray-700 flex items-center gap-2 whitespace-nowrap">
+                                  {isUploadingLogo ? 'Đang xử lý...' : 'Tải lên'}
+                               </label>
+                            </div>
+                            {siteLogo && (
+                               <div className="mt-2 p-2 border border-gray-200 rounded bg-gray-50 max-w-[150px]">
+                                  <img src={siteLogo} alt="Logo preview" className="max-w-full h-auto max-h-16 object-contain" />
+                               </div>
+                            )}
+                         </div>
+                      </div>
+                   </div>
+
+                   {/* Liên hệ */}
+                   <div>
+                      <h3 className="font-semibold text-gray-800 mb-4">Thông tin Liên hệ (Footer)</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                         <div>
+                            <label className="block text-xs font-medium text-gray-500 mb-1">Địa chỉ</label>
+                            <input type="text" value={contactAddress} onChange={e => setContactAddress(e.target.value)} className="w-full border border-gray-300 px-3 py-2 text-sm rounded-lg" />
+                         </div>
+                         <div>
+                            <label className="block text-xs font-medium text-gray-500 mb-1">Điện thoại</label>
+                            <input type="text" value={contactPhone} onChange={e => setContactPhone(e.target.value)} className="w-full border border-gray-300 px-3 py-2 text-sm rounded-lg" />
+                         </div>
+                         <div>
+                            <label className="block text-xs font-medium text-gray-500 mb-1">Facebook URL</label>
+                            <input type="text" value={facebookUrl} onChange={e => setFacebookUrl(e.target.value)} className="w-full border border-gray-300 px-3 py-2 text-sm rounded-lg" />
+                         </div>
+                         <div>
+                            <label className="block text-xs font-medium text-gray-500 mb-1">Instagram URL</label>
+                            <input type="text" value={instagramUrl} onChange={e => setInstagramUrl(e.target.value)} className="w-full border border-gray-300 px-3 py-2 text-sm rounded-lg" />
+                         </div>
+                      </div>
+                   </div>
+                </div>
+             </div>
+          )}
+
         </main>
       </div>
 
@@ -2650,7 +2846,7 @@ export const Admin = () => {
                            </div>
                         </div>
                         {editingArticle.image && (
-                           <div className="mt-2 aspect-video bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
+                           <div className="mt-2 aspect-video bg-gray-100 rounded-lg overflow-hidden border border-gray-200 relative">
                               <img src={parseDriveUrl(editingArticle.image, 'image')} alt="Preview" className="w-full h-full object-cover" />
                            </div>
                         )}
@@ -2759,7 +2955,7 @@ export const Admin = () => {
                         <div className="space-y-4">
                            <div className="space-y-1">
                               <label className="text-xs font-medium text-gray-500">Các link Hình ảnh / Thư mục Google Drive <span className="text-red-500">*</span></label>
-                              <textarea required placeholder="https://drive.google.com/file/d/.../view\nhttps://drive.google.com/drive/folders/..." value={editingGallery.url || ''} onChange={e => setEditingGallery({...editingGallery, url: e.target.value})} className="w-full border border-gray-300 px-3 py-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px]" />
+                              <textarea placeholder="https://drive.google.com/file/d/.../view\nhttps://drive.google.com/drive/folders/..." value={editingGallery.url || ''} onChange={e => setEditingGallery({...editingGallery, url: e.target.value})} className="w-full border border-gray-300 px-3 py-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px]" />
                               <p className="text-[10px] text-gray-400">Mỗi link một dòng. Hệ thống hỗ trợ link Google Drive (ảnh đơn hoặc cả thư mục).</p>
                            </div>
                            <div className="space-y-1">
@@ -2767,13 +2963,15 @@ export const Admin = () => {
                               <input placeholder="https://..." value={editingGallery.thumbnail || ''} onChange={e => setEditingGallery({...editingGallery, thumbnail: e.target.value})} className="w-full border border-gray-300 px-3 py-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
                            </div>
                            {editingGallery.thumbnail && (
-                             <div className="mt-2 aspect-video bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
-                                <img src={parseDriveUrl(editingGallery.thumbnail, 'image')} alt="Thumbnail Preview" className="w-full h-full object-cover" />
+                             <div className="mt-2 aspect-video bg-gray-100 rounded-lg overflow-hidden border border-gray-200 relative">
+                                <img src={parseDriveUrl(editingGallery.thumbnail, 'image')} alt="Thumbnail Preview" className="w-full h-full object-cover" referrerPolicy="no-referrer" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} />
+<div className="absolute inset-0 flex items-center justify-center text-red-500 text-xs hidden text-center p-2 bg-red-50">Lỗi: Không thể tải ảnh.<br/>Hãy chắc chắn link hợp lệ và đã mở quyền "Anyone with the link"</div>
                              </div>
                            )}
                            {editingGallery.url && editingGallery.url.split('\n').filter((u: string) => u.trim()).length === 1 && !editingGallery.url.includes('folders') && (
-                             <div className="mt-2 aspect-video bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
-                                <img src={parseDriveUrl(editingGallery.url.trim(), 'image')} alt="Preview" className="w-full h-full object-contain" />
+                             <div className="mt-2 aspect-video bg-gray-100 rounded-lg overflow-hidden border border-gray-200 relative">
+                                <img src={parseDriveUrl(editingGallery.url.trim(), 'image')} alt="Preview" className="w-full h-full object-contain" referrerPolicy="no-referrer" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} />
+<div className="absolute inset-0 flex items-center justify-center text-red-500 text-xs hidden text-center p-2 bg-red-50">Lỗi: Không thể tải ảnh.<br/>Hãy chắc chắn link hợp lệ và đã mở quyền "Anyone with the link"</div>
                              </div>
                            )}
                            {editingGallery.url && editingGallery.url.split('\n').filter((u: string) => u.trim()).length > 1 && (
@@ -2788,7 +2986,7 @@ export const Admin = () => {
                         <div className="space-y-4">
                            <div className="space-y-1">
                               <label className="text-xs font-medium text-gray-500">Các link Video YouTube / Google Drive <span className="text-red-500">*</span></label>
-                              <textarea required placeholder="https://www.youtube.com/watch?v=...\nhttps://drive.google.com/file/d/.../view" value={editingGallery.videoUrl || ''} onChange={e => setEditingGallery({...editingGallery, videoUrl: e.target.value})} className="w-full border border-gray-300 px-3 py-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px]" />
+                              <textarea placeholder="https://www.youtube.com/watch?v=...\nhttps://drive.google.com/file/d/.../view" value={editingGallery.videoUrl || ''} onChange={e => setEditingGallery({...editingGallery, videoUrl: e.target.value})} className="w-full border border-gray-300 px-3 py-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px]" />
                               <p className="text-[10px] text-gray-400">Mỗi link một dòng. Hệ thống hỗ trợ link YouTube và Google Drive.</p>
                            </div>
                            <div className="space-y-1">
@@ -2796,12 +2994,13 @@ export const Admin = () => {
                               <input placeholder="https://..." value={editingGallery.thumbnail || ''} onChange={e => setEditingGallery({...editingGallery, thumbnail: e.target.value})} className="w-full border border-gray-300 px-3 py-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
                            </div>
                            {editingGallery.thumbnail && (
-                             <div className="mt-2 aspect-video bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
-                                <img src={parseDriveUrl(editingGallery.thumbnail, 'image')} alt="Thumbnail Preview" className="w-full h-full object-cover" />
+                             <div className="mt-2 aspect-video bg-gray-100 rounded-lg overflow-hidden border border-gray-200 relative">
+                                <img src={parseDriveUrl(editingGallery.thumbnail, 'image')} alt="Thumbnail Preview" className="w-full h-full object-cover" referrerPolicy="no-referrer" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} />
+<div className="absolute inset-0 flex items-center justify-center text-red-500 text-xs hidden text-center p-2 bg-red-50">Lỗi: Không thể tải ảnh.<br/>Hãy chắc chắn link hợp lệ và đã mở quyền "Anyone with the link"</div>
                              </div>
                            )}
                            {editingGallery.videoUrl && editingGallery.videoUrl.split('\n').filter((u: string) => u.trim()).length === 1 && (
-                             <div className="mt-2 aspect-video bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
+                             <div className="mt-2 aspect-video bg-gray-100 rounded-lg overflow-hidden border border-gray-200 relative">
                                 <iframe src={parseDriveUrl(editingGallery.videoUrl.trim(), 'video')} className="w-full h-full object-cover" />
                              </div>
                            )}
@@ -2912,7 +3111,7 @@ export const Admin = () => {
                         </div>
                      </div>
                      {editingEvent.image && (
-                        <div className="mt-2 aspect-video bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
+                        <div className="mt-2 aspect-video bg-gray-100 rounded-lg overflow-hidden border border-gray-200 relative">
                            <img src={parseDriveUrl(editingEvent.image, 'image')} alt="Preview" className="w-full h-full object-cover" />
                         </div>
                      )}

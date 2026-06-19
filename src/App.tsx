@@ -50,8 +50,8 @@ import {
 
 // --- Types & Context ---
 
-type Theme = 'classic' | 'evergreen' | 'midnight' | 'pastelRed';
-type Font = 'serif' | 'sans' | 'display' | 'clean';
+type Theme = 'classic' | 'evergreen' | 'midnight' | 'pastelRed' | 'custom';
+type Font = 'serif' | 'sans' | 'display' | 'clean' | 'custom';
 type Language = 'vi' | 'en';
 
 interface ThemeConfig {
@@ -68,7 +68,8 @@ const fonts: Record<Font, string> = {
   serif: 'font-serif',
   sans: 'font-sans',
   display: 'font-display',
-  clean: 'font-clean'
+  clean: 'font-clean',
+  custom: 'font-custom'
 };
 
 const themes: Record<Theme, ThemeConfig> = {
@@ -107,6 +108,15 @@ const themes: Record<Theme, ThemeConfig> = {
     card: 'bg-white',
     border: 'border-[#FFEBEE]',
     overlay: 'bg-[#FFF9F9]/50'
+  },
+  custom: {
+    bg: 'theme-custom-bg',
+    text: 'theme-custom-text',
+    accent: 'theme-custom-accent',
+    accentText: 'theme-custom-accentText',
+    card: 'theme-custom-card',
+    border: 'theme-custom-border',
+    overlay: 'theme-custom-overlay'
   }
 };
 
@@ -229,6 +239,14 @@ interface ThemeContextType {
   font: Font;
   setFont: (f: Font) => void;
   config: ThemeConfig;
+  siteName?: string;
+  siteLogo?: string;
+  contactAddress?: string;
+  contactPhone?: string;
+  facebookUrl?: string;
+  instagramUrl?: string;
+  customColor?: string;
+  customFont?: string;
 }
 
 const ThemeContext = createContext<ThemeContextType>({
@@ -236,7 +254,15 @@ const ThemeContext = createContext<ThemeContextType>({
   setTheme: () => {},
   font: 'serif',
   setFont: () => {},
-  config: themes.pastelRed
+  config: themes.pastelRed,
+  siteName: 'Sách nhà Mình',
+  siteLogo: '',
+  contactAddress: '123 Văn Chương, Quận Tri Thức, TP. Hồ Chí Minh',
+  contactPhone: '090 457 03 83',
+  facebookUrl: 'https://www.facebook.com/sachnhaminh',
+  instagramUrl: '',
+  customColor: '#8B2B2B',
+  customFont: 'Inter'
 });
 
 const LanguageContext = createContext<{
@@ -793,8 +819,18 @@ const NewsModal = ({ news, onClose }: { news: typeof SCHOOL_NEWS[0] | null, onCl
           </div>
 
           <div className="p-10 md:p-16">
-            <div className={`prose prose-sm max-w-none ${config.text} opacity-80 leading-relaxed space-y-6 whitespace-pre-line text-lg`}>
-              {lang === 'vi' ? news.content_vi : news.content_en}
+            <div className={`prose prose-sm max-w-none ${config.text} opacity-80 leading-relaxed space-y-6 text-lg ql-snow`}>
+              <div 
+                className="ql-editor p-0 text-lg leading-relaxed space-y-6"
+                dangerouslySetInnerHTML={{
+                  __html: (() => {
+                    const content = lang === 'vi' ? news.content_vi : news.content_en || news.content_vi;
+                    const str = content || '';
+                    const isHtml = /<[a-z][\s\S]*>/i.test(str);
+                    return isHtml ? cleanHtmlContent(str) : str.replace(/\n/g, '<br/>');
+                  })()
+                }}
+              />
             </div>
 
             <div className="mt-16 pt-8 border-t border-black/5 flex items-center justify-between">
@@ -1476,12 +1512,10 @@ const CompactCalendar = ({ className = "", onEventClick, onBookClick }: { classN
 
 
 const Navbar = ({ onBookClick }: { onBookClick?: () => void }) => {
-  const { theme, setTheme, font, setFont, config } = useContext(ThemeContext);
+  const { theme, setTheme, font, setFont, config, siteName, siteLogo } = useContext(ThemeContext);
   const { lang, setLang, t } = useContext(LanguageContext);
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const settingsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 50);
@@ -1491,9 +1525,6 @@ const Navbar = ({ onBookClick }: { onBookClick?: () => void }) => {
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (settingsRef.current && !settingsRef.current.contains(event.target as Node)) {
-        setSettingsOpen(false);
-      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -1504,8 +1535,12 @@ const Navbar = ({ onBookClick }: { onBookClick?: () => void }) => {
       <nav className={`fixed top-0 left-0 right-0 z-[60] transition-all duration-500 ${isScrolled || mobileMenuOpen ? `${config.bg}/80 backdrop-blur-xl py-4 shadow-sm` : 'bg-transparent py-6'}`}>
         <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
           <div className={`text-xl md:text-2xl font-bold tracking-tight ${config.text} flex items-center gap-2 z-50`}>
-            <BookOpen className={`w-6 h-6 md:w-8 h-8 ${config.accentText}`} />
-            <span>Sách nhà Mình</span>
+            {siteLogo ? (
+              <img src={siteLogo} alt={siteName || 'Sách nhà Mình'} className="h-8 md:h-10 object-contain" />
+            ) : (
+              <BookOpen className={`w-6 h-6 md:w-8 h-8 ${config.accentText}`} />
+            )}
+            <span>{siteName || 'Sách nhà Mình'}</span>
           </div>
           
           <div className="hidden lg:flex items-center gap-8">
@@ -1517,55 +1552,6 @@ const Navbar = ({ onBookClick }: { onBookClick?: () => void }) => {
           </div>
 
           <div className="flex items-center gap-2 md:gap-4 z-50">
-            {/* Settings Trigger */}
-            <div className="relative group" ref={settingsRef}>
-              <button 
-                onClick={() => setSettingsOpen(!settingsOpen)}
-                className={`p-2 rounded-full border ${config.border} ${config.bg} shadow-sm hover:rotate-45 transition-all duration-500`}
-                title="Cài đặt giao diện"
-              >
-                <Settings size={18} className="opacity-70" />
-              </button>
-              
-              {/* Settings Dropdown */}
-              <div className={`absolute right-0 mt-2 w-64 p-4 rounded-2xl border ${config.border} ${config.bg} shadow-2xl transition-all duration-300 transform origin-top-right z-[100] ${settingsOpen ? 'opacity-100 visible scale-100' : 'opacity-0 invisible scale-95 md:group-hover:opacity-100 md:group-hover:visible md:group-hover:scale-100'}`}>
-                <div className="space-y-6">
-                  {/* Theme Section */}
-                  <div>
-                    <span className="text-[10px] font-bold uppercase tracking-widest opacity-40 mb-3 block">Màu sắc / Colors</span>
-                    <div className="grid grid-cols-4 gap-2">
-                      {(['pastelRed', 'classic', 'evergreen', 'midnight'] as Theme[]).map((t) => (
-                        <button
-                          key={t}
-                          onClick={() => setTheme(t)}
-                          className={`aspect-square rounded-full transition-all flex items-center justify-center ${theme === t ? 'ring-2 ring-offset-2 ring-black/10 scale-110' : 'opacity-40 hover:opacity-100'}`}
-                          style={{ backgroundColor: t === 'pastelRed' ? '#E57373' : t === 'classic' ? '#967E67' : t === 'evergreen' ? '#0A1F16' : '#8A96F1' }}
-                        >
-                          {theme === t && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Font Section */}
-                  <div>
-                    <span className="text-[10px] font-bold uppercase tracking-widest opacity-40 mb-3 block">Phông chữ / Fonts</span>
-                    <div className="grid grid-cols-2 gap-2">
-                      {(['serif', 'sans', 'display', 'clean'] as Font[]).map((f) => (
-                        <button
-                          key={f}
-                          onClick={() => setFont(f)}
-                          className={`py-2 px-3 rounded-lg text-xs font-medium transition-all border ${font === f ? `${config.accent} text-white border-transparent shadow-sm` : `${config.border} opacity-60 hover:opacity-100`}`}
-                        >
-                          {f.charAt(0).toUpperCase() + f.slice(1)}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
             {/* Lang Switcher */}
             <div className={`flex ${config.bg} p-1 rounded-full border ${config.border} shadow-sm`}>
               {(['vi', 'en'] as Language[]).map((l) => (
@@ -2049,21 +2035,21 @@ const NewsSection = () => {
               >
                 <div className="aspect-[16/10] overflow-hidden relative shrink-0">
                    <img src={featuredNews.image || undefined} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" alt="featured" />
-                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                   <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/60 to-transparent" />
                    <div className="absolute top-10 left-10">
                       <span className={`${config.accent} text-white text-[10px] font-black uppercase tracking-[0.2em] px-5 py-2 rounded-full`}>
                         Featured
                       </span>
                    </div>
-                   <div className="absolute bottom-10 left-10 p-2">
-                       <span className="text-white/60 text-xs font-bold uppercase tracking-[0.3em] mb-4 block">{featuredNews.date}</span>
-                       <h3 className="text-white text-3xl md:text-5xl font-black leading-tight max-w-xl group-hover:translate-x-2 transition-transform duration-500">
-                         {lang === 'vi' ? featuredNews.title_vi : featuredNews.title_en}
-                       </h3>
-                   </div>
                 </div>
-                <div className="p-12 md:p-16 flex flex-col flex-1 justify-between gap-6">
-                  <p className={`${config.text} opacity-80 text-xl leading-relaxed line-clamp-3 font-serif italic`}>
+                <div className="p-12 md:p-16 flex flex-col flex-1 gap-6">
+                  <div>
+                    <span className="text-gray-400 text-xs font-bold uppercase tracking-[0.3em] mb-4 block">{featuredNews.date}</span>
+                    <h3 className={`${config.text} text-3xl md:text-5xl font-black leading-tight max-w-xl group-hover:text-blue-600 transition-colors duration-500`}>
+                      {lang === 'vi' ? featuredNews.title_vi : featuredNews.title_en}
+                    </h3>
+                  </div>
+                  <p className={`${config.text} opacity-80 text-xl leading-relaxed line-clamp-3 font-serif italic flex-1`}>
                     "{lang === 'vi' ? featuredNews.summary_vi : featuredNews.summary_en}"
                   </p>
                   <div className="pt-8 border-t border-black/5 flex items-center justify-between">
@@ -2265,7 +2251,7 @@ const CultureChronicles = () => {
         </h2>
         <p className={`${config.text} opacity-60 text-sm max-w-2xl`}>
           {lang === 'vi' 
-            ? 'Khám phá các sự kiện văn hóa nổi bật cùng với chuỗi bài viết vệ tinh, hình ảnh và video tư liệu được lưu trữ trực quan.' 
+            ? 'Khám phá các sự kiện văn hóa nổi bật cùng với chuỗi tin sự kiện, hình ảnh và video tư liệu được lưu trữ trực quan.' 
             : 'Explore prominent cultural events along with their chain of satellite articles, photo galleries, and video documentations.'}
         </p>
       </div>
@@ -2451,7 +2437,7 @@ const CultureChronicles = () => {
                       : 'border-transparent text-gray-400 hover:text-black'
                   }`}
                 >
-                  {lang === 'vi' ? `Bài viết vệ tinh (${relatedArticles.length})` : `Satellite Articles (${relatedArticles.length})`}
+                  {lang === 'vi' ? `Tin sự kiện (${relatedArticles.length})` : `Satellite Articles (${relatedArticles.length})`}
                 </button>
                 <button
                   onClick={() => setActiveSubTab('images')}
@@ -2500,7 +2486,7 @@ const CultureChronicles = () => {
                     ) : (
                       <div className="py-12 text-center text-gray-400 flex flex-col items-center">
                         <FileText className="w-10 h-10 opacity-30 mb-2" />
-                        <p className="text-sm">{lang === 'vi' ? 'Chưa có bài viết vệ tinh cho sự kiện này.' : 'No related articles for this event.'}</p>
+                        <p className="text-sm">{lang === 'vi' ? 'Chưa có tin sự kiện cho sự kiện này.' : 'No related articles for this event.'}</p>
                       </div>
                     )}
                   </div>
@@ -2741,7 +2727,7 @@ const CultureChronicles = () => {
               <h4 className="font-bold text-lg mb-2 text-gray-700">{lang === 'vi' ? 'Khám Phá Dòng Sự Kiện' : 'Explore Event Stream'}</h4>
               <p className="text-sm max-w-sm">
                 {lang === 'vi' 
-                  ? 'Hãy chọn một sự kiện bên danh sách để xem chi tiết bài viết vệ tinh, kho ảnh tư liệu và thước phim kết nối từ Google Drive.' 
+                  ? 'Hãy chọn một sự kiện bên danh sách để xem chi tiết tin sự kiện, kho ảnh tư liệu và thước phim kết nối từ Google Drive.' 
                   : 'Select an event from the list to view its related articles, documentation archive, and video streams connected from Google Drive.'}
               </p>
             </div>
@@ -2768,7 +2754,7 @@ const CultureChronicles = () => {
             >
               <div className="px-6 py-4 border-b border-black/[0.05] flex justify-between items-center bg-gray-50/50">
                 <span className={`text-[10px] font-bold uppercase tracking-widest ${config.accentText} bg-black/5 py-1 px-3 rounded-full`}>
-                  {readingArticle.category || 'Bài viết vệ tinh'}
+                  {readingArticle.category || 'Tin sự kiện'}
                 </span>
                 <button onClick={() => setReadingArticle(null)} className="text-gray-400 hover:text-gray-600">
                   <X className="w-6 h-6" />
@@ -3237,7 +3223,7 @@ const BookReview = () => {
 };
 
 const Footer = () => {
-  const { config } = useContext(ThemeContext);
+  const { config, siteName, siteLogo, contactAddress, contactPhone, facebookUrl, instagramUrl } = useContext(ThemeContext);
   const { t, lang } = useContext(LanguageContext);
   const [formData, setFormData] = useState({ name: '', email: '', phone: '', message: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -3265,32 +3251,38 @@ const Footer = () => {
   };
 
   return (
-    <footer className={`${config.bg} border-t ${config.border} py-20 px-6`}>
+    <footer id="lien-he" className={`${config.bg} border-t ${config.border} py-20 px-6`}>
       <div className="max-w-7xl mx-auto">
         <div className="grid md:grid-cols-12 gap-12 mb-20 text-center md:text-left">
           <div className="col-span-full md:col-span-4">
             <div className={`text-2xl font-bold ${config.text} mb-6 flex items-center justify-center md:justify-start gap-2`}>
-              <BookOpen className={`w-8 h-8 ${config.accentText}`} />
-              <span>Sách nhà Mình</span>
+              {siteLogo ? (
+                <img src={siteLogo} alt={siteName || 'Sách nhà Mình'} className="h-10 object-contain" />
+              ) : (
+                <BookOpen className={`w-8 h-8 ${config.accentText}`} />
+              )}
+              <span>{siteName || 'Sách nhà Mình'}</span>
             </div>
             <p className={`${config.text} opacity-80 max-w-sm mx-auto md:mx-0 leading-relaxed`}>{t.footerDesc}</p>
             <div className="flex justify-center md:justify-start gap-4 mt-8 mb-6">
-               <a href="https://www.facebook.com/sachnhaminh" target="_blank" rel="noopener noreferrer" className={`p-3 rounded-full ${config.card} ${config.border} border hover:scale-110 transition-all`}><Facebook className="w-5 h-5" /></a>
-               <a href="#" className={`p-3 rounded-full ${config.card} ${config.border} border hover:scale-110 transition-all`}><Instagram className="w-5 h-5" /></a>
+               {facebookUrl && <a href={facebookUrl} target="_blank" rel="noopener noreferrer" className={`p-3 rounded-full ${config.card} ${config.border} border hover:scale-110 transition-all`}><Facebook className="w-5 h-5" /></a>}
+               {instagramUrl && <a href={instagramUrl} target="_blank" rel="noopener noreferrer" className={`p-3 rounded-full ${config.card} ${config.border} border hover:scale-110 transition-all`}><Instagram className="w-5 h-5" /></a>}
             </div>
-            <div className="flex justify-center md:justify-start">
-              <iframe 
-                src="https://www.facebook.com/plugins/page.php?href=https%3A%2F%2Fwww.facebook.com%2Fsachnhaminh&tabs=&width=270&height=130&small_header=false&adapt_container_width=true&hide_cover=false&show_facepile=true&appId" 
-                width="270" 
-                height="130" 
-                style={{ border: 'none', overflow: 'hidden', borderRadius: '8px' }} 
-                scrolling="no" 
-                frameBorder="0" 
-                allowFullScreen={true} 
-                allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
-                title="Sách nhà Mình Facebook Page"
-              ></iframe>
-            </div>
+            {facebookUrl && (
+              <div className="flex justify-center md:justify-start">
+                <iframe 
+                  src={`https://www.facebook.com/plugins/page.php?href=${encodeURIComponent(facebookUrl)}&tabs=&width=270&height=130&small_header=false&adapt_container_width=true&hide_cover=false&show_facepile=true&appId`} 
+                  width="270" 
+                  height="130" 
+                  style={{ border: 'none', overflow: 'hidden', borderRadius: '8px' }} 
+                  scrolling="no" 
+                  frameBorder="0" 
+                  allowFullScreen={true} 
+                  allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+                  title="Sách nhà Mình Facebook Page"
+                ></iframe>
+              </div>
+            )}
           </div>
           
           <div className="md:col-span-2 hidden md:block">
@@ -3307,11 +3299,11 @@ const Footer = () => {
             <ul className="space-y-4">
               <li className="flex items-start justify-center md:justify-start gap-3">
                 <MapPin className={`w-5 h-5 ${config.accentText} opacity-60 mt-1 flex-shrink-0`} />
-                <span className={`${config.text} opacity-80 leading-relaxed text-sm`}>123 Văn Chương, Quận Tri Thức, TP. Hồ Chí Minh</span>
+                <span className={`${config.text} opacity-80 leading-relaxed text-sm`}>{contactAddress || '123 Văn Chương, Quận Tri Thức, TP. Hồ Chí Minh'}</span>
               </li>
               <li className="flex items-center justify-center md:justify-start gap-3">
                 <Heart className={`w-5 h-5 ${config.accentText} opacity-60 flex-shrink-0`} />
-                <span className={`${config.text} opacity-80 text-sm`}>090 457 03 83</span>
+                <span className={`${config.text} opacity-80 text-sm`}>{contactPhone || '090 457 03 83'}</span>
               </li>
             </ul>
           </div>
@@ -3430,6 +3422,14 @@ const FloatingButtons = () => {
 export default function App() {
   const [theme, setTheme] = useState<Theme>('pastelRed');
   const [font, setFont] = useState<Font>('serif');
+  const [siteName, setSiteName] = useState<string>('Sách nhà Mình');
+  const [siteLogo, setSiteLogo] = useState<string>('');
+  const [contactAddress, setContactAddress] = useState<string>('123 Văn Chương, Quận Tri Thức, TP. Hồ Chí Minh');
+  const [contactPhone, setContactPhone] = useState<string>('090 457 03 83');
+  const [facebookUrl, setFacebookUrl] = useState<string>('https://www.facebook.com/sachnhaminh');
+  const [instagramUrl, setInstagramUrl] = useState<string>('');
+  const [customColor, setCustomColor] = useState<string>('#8B2B2B');
+  const [customFont, setCustomFont] = useState<string>('Inter');
   const [lang, setLang] = useState<Language>('vi');
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [isBookingOpen, setIsBookingOpen] = useState(false);
@@ -3460,6 +3460,19 @@ export default function App() {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        const { data: settingsData } = await supabase.from('site_settings').select('*').eq('id', 'global').single();
+        if (settingsData) {
+          if (settingsData.theme) setTheme(settingsData.theme);
+          if (settingsData.font) setFont(settingsData.font);
+          if (settingsData.site_name) setSiteName(settingsData.site_name);
+          if (settingsData.site_logo) setSiteLogo(settingsData.site_logo);
+          if (settingsData.contact_address) setContactAddress(settingsData.contact_address);
+          if (settingsData.contact_phone) setContactPhone(settingsData.contact_phone);
+          if (settingsData.facebook_url) setFacebookUrl(settingsData.facebook_url);
+          if (settingsData.instagram_url) setInstagramUrl(settingsData.instagram_url);
+          if (settingsData.custom_color) setCustomColor(settingsData.custom_color);
+          if (settingsData.custom_font) setCustomFont(settingsData.custom_font);
+        }
         const { data: eventsData } = await supabase.from('events').select('*');
         const { data: regsData } = await supabase.from('registrations').select('event_id, participants');
         
@@ -3552,9 +3565,23 @@ export default function App() {
     }
   }, []);
 
+  const customStyles = `
+    ${font === 'custom' ? `@import url('https://fonts.googleapis.com/css2?family=${customFont.replace(/ /g, '+')}:wght@300;400;500;600;700&display=swap');
+    .font-custom { font-family: '${customFont}', sans-serif !important; }` : ''}
+    ${theme === 'custom' ? `
+    .theme-custom-bg { background-color: ${customColor}15 !important; }
+    .theme-custom-text { color: #1a1a1a !important; }
+    .theme-custom-accent { background-color: ${customColor} !important; }
+    .theme-custom-accentText { color: ${customColor} !important; }
+    .theme-custom-card { background-color: #ffffff !important; }
+    .theme-custom-border { border-color: ${customColor}30 !important; }
+    .theme-custom-overlay { background-color: ${customColor}40 !important; }` : ''}
+  `;
+
   if (isAdminView) {
     return (
-      <ThemeContext.Provider value={{ theme, setTheme, font, setFont, config: themes[theme] }}>
+      <ThemeContext.Provider value={{ theme, setTheme, font, setFont, config: themes[theme], siteName, siteLogo, contactAddress, contactPhone, facebookUrl, instagramUrl, customColor, customFont }}>
+         {(theme === 'custom' || font === 'custom') && <style>{customStyles}</style>}
          <Admin />
       </ThemeContext.Provider>
     )
@@ -3627,7 +3654,8 @@ export default function App() {
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, font, setFont, config }}>
+    <ThemeContext.Provider value={{ theme, setTheme, font, setFont, config, siteName, siteLogo, contactAddress, contactPhone, facebookUrl, instagramUrl, customColor, customFont }}>
+      {(theme === 'custom' || font === 'custom') && <style>{customStyles}</style>}
       <LanguageContext.Provider value={{ lang, setLang, t }}>
         <DataContext.Provider value={{ events, articles, gallery, books, slides, subCategories }}>
           <div className={`min-h-screen transition-colors duration-1000 ${config.bg} ${config.text} ${fontClass} selection:bg-black selection:text-white`}>
@@ -3673,7 +3701,7 @@ export default function App() {
                />
             </div>
 
-            <section id={NAV_SLUGS[4]} className="py-32 px-6 bg-black/[0.01]">
+            <section className="py-32 px-6 bg-black/[0.01]">
 <div className="max-w-7xl mx-auto">
 <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-24 items-start">
 <div className="lg:col-span-8">
