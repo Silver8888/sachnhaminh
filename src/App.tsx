@@ -3436,6 +3436,7 @@ export default function App() {
   const [bookingEventId, setBookingEventId] = useState<number | undefined>(undefined);
   const [expandedEventId, setExpandedEventId] = useState<number | null>(null);
   const [isAdminView, setIsAdminView] = useState(window.location.hash === '#/admin');
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const [searchEventQuery, setSearchEventQuery] = useState('');
   const [searchEventDate, setSearchEventDate] = useState('');
@@ -3460,7 +3461,26 @@ export default function App() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const { data: settingsData } = await supabase.from('site_settings').select('*').eq('id', 'global').single();
+        const [
+          { data: settingsData },
+          { data: eventsData },
+          { data: regsData },
+          { data: articlesData },
+          { data: galleryData },
+          { data: booksData },
+          { data: slidesData },
+          { data: subCatsData }
+        ] = await Promise.all([
+          supabase.from('site_settings').select('*').eq('id', 'global').single(),
+          supabase.from('events').select('*'),
+          supabase.from('registrations').select('event_id, participants'),
+          supabase.from('articles').select('*'),
+          supabase.from('gallery').select('*'),
+          supabase.from('books').select('*'),
+          supabase.from('slides').select('*').order('order', { ascending: true }),
+          supabase.from('sub_categories').select('*')
+        ]);
+
         if (settingsData) {
           if (settingsData.theme) setTheme(settingsData.theme);
           if (settingsData.font) setFont(settingsData.font);
@@ -3473,9 +3493,7 @@ export default function App() {
           if (settingsData.custom_color) setCustomColor(settingsData.custom_color);
           if (settingsData.custom_font) setCustomFont(settingsData.custom_font);
         }
-        const { data: eventsData } = await supabase.from('events').select('*');
-        const { data: regsData } = await supabase.from('registrations').select('event_id, participants');
-        
+
         const regsCountMap: Record<string, number> = {};
         if (regsData) {
            regsData.forEach((r: any) => {
@@ -3494,7 +3512,7 @@ export default function App() {
             endTime: ev.end_time
           })));
         }
-        const { data: articlesData } = await supabase.from('articles').select('*');
+
         if (articlesData) {
           setArticles(articlesData.map((art: any) => ({
             ...art,
@@ -3502,7 +3520,6 @@ export default function App() {
           })));
         }
         
-        const { data: galleryData } = await supabase.from('gallery').select('*');
         if (galleryData) {
           setGallery(galleryData.map((item: any) => ({
             ...item,
@@ -3511,7 +3528,6 @@ export default function App() {
           })));
         }
         
-        const { data: booksData } = await supabase.from('books').select('*');
         if (booksData) {
           setBooks(booksData.map((b: any) => ({
             ...b,
@@ -3523,7 +3539,6 @@ export default function App() {
           })));
         }
         
-        const { data: slidesData } = await supabase.from('slides').select('*').order('order', { ascending: true });
         if (slidesData) {
           setSlides(slidesData.map((sl: any) => ({
             ...sl,
@@ -3531,10 +3546,11 @@ export default function App() {
           })));
         }
         
-        const { data: subCatsData } = await supabase.from('sub_categories').select('*');
         if (subCatsData) setSubCategories(subCatsData);
       } catch (err) {
         console.error('Lỗi khi tải dữ liệu từ Supabase:', err);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -3659,6 +3675,13 @@ export default function App() {
       <LanguageContext.Provider value={{ lang, setLang, t }}>
         <DataContext.Provider value={{ events, articles, gallery, books, slides, subCategories }}>
           <div className={`min-h-screen transition-colors duration-1000 ${config.bg} ${config.text} ${fontClass} selection:bg-black selection:text-white`}>
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center min-h-[100dvh] w-full">
+              <div className="w-12 h-12 border-4 border-current/20 border-t-current rounded-full animate-spin"></div>
+              <p className="mt-6 text-sm font-bold tracking-widest uppercase opacity-60">{lang === 'vi' ? 'Welcome to Sách Nhà Mình' : 'Welcome to Sách Nhà Mình'}</p>
+            </div>
+          ) : (
+            <>
           <Navbar onBookClick={() => handleOpenBooking()} />
           
           <AnimatePresence>
@@ -4116,6 +4139,8 @@ export default function App() {
             <FloatingButtons />
           </main>
           <Footer />
+          </>
+          )}
         </div>
         </DataContext.Provider>
       </LanguageContext.Provider>
