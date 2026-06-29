@@ -247,6 +247,8 @@ interface ThemeContextType {
   instagramUrl?: string;
   customColor?: string;
   customFont?: string;
+  showSpotlight?: boolean;
+  showBookReview?: boolean;
 }
 
 const ThemeContext = createContext<ThemeContextType>({
@@ -262,7 +264,9 @@ const ThemeContext = createContext<ThemeContextType>({
   facebookUrl: 'https://www.facebook.com/sachnhaminh',
   instagramUrl: '',
   customColor: '#8B2B2B',
-  customFont: 'Inter'
+  customFont: 'Inter',
+  showSpotlight: true,
+  showBookReview: true
 });
 
 const LanguageContext = createContext<{
@@ -282,9 +286,10 @@ interface DataContextType {
   books: any[];
   slides: any[];
   subCategories: any[];
+  classifications?: any[];
 }
 
-const DataContext = createContext<DataContextType>({ events: [], articles: [], gallery: [], books: [], slides: [], subCategories: [] });
+const DataContext = createContext<DataContextType>({ events: [], articles: [], gallery: [], books: [], slides: [], subCategories: [], classifications: [] });
 
 // --- Helper Functions ---
 const getCityFromLocation = (location?: string, lang: string = 'vi') => {
@@ -298,8 +303,23 @@ const getCityFromLocation = (location?: string, lang: string = 'vi') => {
   return null;
 };
 
+const resolveEventCategory = (event: any, classificationsList: any[] = []) => {
+  const cat = event?.category;
+  if (!cat || cat === 'school' || cat === 'culture') {
+    return 'sachnhaminh';
+  }
+  if (classificationsList && classificationsList.length > 0 && classificationsList.some(c => c.id === cat)) {
+    return cat;
+  }
+  // Default fallback if not found in list (protecting default hardcoded classifications)
+  if (cat === 'external') {
+    return 'external';
+  }
+  return 'sachnhaminh';
+};
+
 const resolveEventSubCategory = (event: any, subCategories: any[]) => {
-  const mainType = (event.category === 'sachnhaminh' || event.category === 'school' || event.category === 'culture' || !event.category) ? 'sachnhaminh' : 'external';
+  const mainType = resolveEventCategory(event);
   
   const subId = event?.sub_category_id || event?.subCategory;
   if (event && subId) {
@@ -1093,15 +1113,16 @@ const BookingModal = ({ isOpen, onClose, initialEventId }: { isOpen: boolean, on
 const EventDetailModal = ({ event, isOpen, onClose, onBook }: { event: any, isOpen: boolean, onClose: () => void, onBook: () => void }) => {
   const { config } = useContext(ThemeContext);
   const { lang } = useContext(LanguageContext);
-  const { subCategories } = useContext(DataContext);
+  const { subCategories, classifications = [] } = useContext(DataContext);
 
   if (!isOpen || !event) return null;
 
   const resolvedSub = resolveEventSubCategory(event, subCategories);
-  const mainType = (event.category === 'sachnhaminh' || event.category === 'school' || event.category === 'culture' || !event.category) ? 'sachnhaminh' : 'external';
-  const resolvedMainTypeName = mainType === 'sachnhaminh' 
-    ? (lang === 'vi' ? 'Sách Nhà Mình' : 'Sach Nha Minh') 
-    : (lang === 'vi' ? 'Sự kiện bên ngoài' : 'External'); 
+  const mainType = resolveEventCategory(event, classifications);
+  const matchedClassification = classifications.find(c => c.id === mainType);
+  const resolvedMainTypeName = matchedClassification 
+    ? (lang === 'vi' ? matchedClassification.name_vi : matchedClassification.name_en) 
+    : (lang === 'vi' ? 'Sách Nhà Mình' : 'Sach Nha Minh'); 
   const resolvedSubCategoryName = lang === 'vi' ? resolvedSub.name_vi : resolvedSub.name_en;
 
   const approved = getApprovedCount(event);
@@ -1296,7 +1317,7 @@ const Countdown = ({ targetDate, isHappening, compact }: { targetDate: string, i
 const CompactCalendar = ({ className = "", onEventClick, onBookClick }: { className?: string, onEventClick?: (e: any) => void, onBookClick?: (e: any) => void }) => {
   const { config } = useContext(ThemeContext);
   const { t, lang } = useContext(LanguageContext);
-  const { events: dbEvents, subCategories } = useContext(DataContext);
+  const { events: dbEvents, subCategories, classifications = [] } = useContext(DataContext);
   const events = dbEvents.length > 0 ? dbEvents : SHARED_EVENTS;
 
   const [hoveredEvent, setHoveredEvent] = useState<any>(null);
@@ -1405,10 +1426,11 @@ const CompactCalendar = ({ className = "", onEventClick, onBookClick }: { classN
                         <span className={`text-[9px] font-black uppercase tracking-[0.1em] ${config.accentText} leading-none`}>
                           {(() => {
                             const resolvedSub = resolveEventSubCategory(displayEvent, subCategories);
-                            const mainType = (displayEvent.category === 'sachnhaminh' || displayEvent.category === 'school' || displayEvent.category === 'culture' || !displayEvent.category) ? 'sachnhaminh' : 'external';
-                            const resolvedMainTypeName = mainType === 'sachnhaminh' 
-                              ? (lang === 'vi' ? 'Sách Nhà Mình' : 'Sach Nha Minh') 
-                              : (lang === 'vi' ? 'Sự kiện bên ngoài' : 'External');
+                            const mainType = resolveEventCategory(displayEvent, classifications);
+                            const matchedClassification = classifications.find(c => c.id === mainType);
+                            const resolvedMainTypeName = matchedClassification 
+                              ? (lang === 'vi' ? matchedClassification.name_vi : matchedClassification.name_en) 
+                              : (lang === 'vi' ? 'Sách Nhà Mình' : 'Sach Nha Minh'); 
                             const resolvedSubCategoryName = lang === 'vi' ? resolvedSub.name_vi : resolvedSub.name_en;
                             return `${resolvedMainTypeName} > ${resolvedSubCategoryName}`;
                           })()}
@@ -1512,7 +1534,7 @@ const CompactCalendar = ({ className = "", onEventClick, onBookClick }: { classN
 
 
 const Navbar = ({ onBookClick }: { onBookClick?: () => void }) => {
-  const { theme, setTheme, font, setFont, config, siteName, siteLogo } = useContext(ThemeContext);
+  const { theme, setTheme, font, setFont, config, siteName, siteLogo, showSpotlight, showBookReview } = useContext(ThemeContext);
   const { lang, setLang, t } = useContext(LanguageContext);
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -1544,11 +1566,16 @@ const Navbar = ({ onBookClick }: { onBookClick?: () => void }) => {
           </div>
           
           <div className="hidden lg:flex items-center gap-8">
-            {t.nav.map((item, index) => (
-              <a key={item} href={`#${NAV_SLUGS[index]}`} className={`text-sm font-medium ${config.text} hover:opacity-70 transition-opacity`}>
-                {item}
-              </a>
-            ))}
+            {t.nav.map((item, index) => {
+              const slug = NAV_SLUGS[index];
+              if (slug === 'tieu-diem' && !showSpotlight) return null;
+              if (slug === 'diem-sach' && !showBookReview) return null;
+              return (
+                <a key={item} href={`#${slug}`} className={`text-sm font-medium ${config.text} hover:opacity-70 transition-opacity`}>
+                  {item}
+                </a>
+              );
+            })}
           </div>
 
           <div className="flex items-center gap-2 md:gap-4 z-50">
@@ -1586,16 +1613,21 @@ const Navbar = ({ onBookClick }: { onBookClick?: () => void }) => {
             className={`fixed inset-0 z-50 lg:hidden ${config.bg} pt-24 px-6 flex flex-col`}
           >
             <div className="flex flex-col gap-8 mb-12">
-              {t.nav.map((item, index) => (
-                <a 
-                  key={item} 
-                  href={`#${NAV_SLUGS[index]}`} 
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`text-3xl font-bold ${config.text} hover:opacity-70`}
-                >
-                  {item}
-                </a>
-              ))}
+              {t.nav.map((item, index) => {
+                const slug = NAV_SLUGS[index];
+                if (slug === 'tieu-diem' && !showSpotlight) return null;
+                if (slug === 'diem-sach' && !showBookReview) return null;
+                return (
+                  <a 
+                    key={item} 
+                    href={`#${slug}`} 
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`text-3xl font-bold ${config.text} hover:opacity-70`}
+                  >
+                    {item}
+                  </a>
+                );
+              })}
             </div>
           </motion.div>
         )}
@@ -1703,6 +1735,13 @@ const Hero = ({ onBookClick, onEventClick, onBookEventClick }: {
               className="lg:col-span-8 text-center lg:text-left drop-shadow-lg"
             >
               <div 
+                style={(() => {
+                  const size = parseInt(currentSlide?.heading_font_size);
+                  if (size && !isNaN(size)) {
+                    return { fontSize: `clamp(2rem, 8vw, ${size}px)` };
+                  }
+                  return undefined;
+                })()}
                 className={`text-4xl md:text-6xl lg:text-7xl font-bold ${config.text} mb-6 leading-[1.1] tracking-tight drop-shadow-xl prose-headings:m-0 prose-p:m-0`}
                 dangerouslySetInnerHTML={{ __html: heading }}
               />
@@ -2156,7 +2195,7 @@ const ThumbnailWithHover = ({
 const CultureChronicles = () => {
   const { config } = useContext(ThemeContext);
   const { t, lang } = useContext(LanguageContext);
-  const { events, articles, gallery, subCategories } = useContext(DataContext);
+  const { events, articles, gallery, subCategories, classifications = [] } = useContext(DataContext);
 
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [activeSubTab, setActiveSubTab] = useState<'articles' | 'images' | 'videos'>('articles');
@@ -2169,7 +2208,7 @@ const CultureChronicles = () => {
 
   // Local filter states
   const [searchStatus, setSearchStatus] = useState<'all' | 'happening' | 'upcoming' | 'past'>('all');
-  const [searchMainType, setSearchMainType] = useState<'all' | 'sachnhaminh' | 'external'>('all');
+  const [searchMainType, setSearchMainType] = useState<string>('all');
   const [searchSubCategory, setSearchSubCategory] = useState<string>('all');
 
   // Filter events based on local filter states
@@ -2177,8 +2216,7 @@ const CultureChronicles = () => {
 
   if (searchMainType !== 'all') {
     baseEvents = baseEvents.filter(e => {
-      const mainType = (e.category === 'sachnhaminh' || e.category === 'school' || e.category === 'culture' || !e.category) ? 'sachnhaminh' : 'external';
-      return mainType === searchMainType;
+      return resolveEventCategory(e, classifications) === searchMainType;
     });
   }
 
@@ -2271,12 +2309,15 @@ const CultureChronicles = () => {
               <div className="relative">
                 <select 
                   value={searchMainType} 
-                  onChange={e => setSearchMainType(e.target.value as any)} 
+                  onChange={e => setSearchMainType(e.target.value)} 
                   className={`w-full bg-white border border-gray-200/80 rounded-xl px-3.5 py-2.5 text-xs font-bold uppercase tracking-wider ${config.text} outline-none focus:ring-2 focus:ring-black/5 focus:border-black/25 transition-all appearance-none cursor-pointer pr-10 shadow-sm`}
                 >
                   <option value="all">{lang === 'vi' ? 'Tất cả phân loại' : 'All Classifications'}</option>
-                  <option value="sachnhaminh">{lang === 'vi' ? 'Sách Nhà Mình' : 'Sach Nha Minh'}</option>
-                  <option value="external">{lang === 'vi' ? 'Sự kiện bên ngoài' : 'External Events'}</option>
+                  {classifications.map(c => (
+                    <option key={c.id} value={c.id}>
+                      {lang === 'vi' ? c.name_vi : c.name_en}
+                    </option>
+                  ))}
                 </select>
                 <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none opacity-50">
                   <ChevronDown className="w-4 h-4" />
@@ -2794,7 +2835,7 @@ const CultureChronicles = () => {
 const Events = () => {
   const { config } = useContext(ThemeContext);
   const { t, lang } = useContext(LanguageContext);
-  const { events: dbEvents, subCategories } = useContext(DataContext);
+  const { events: dbEvents, subCategories, classifications = [] } = useContext(DataContext);
   const [currentEventPage, setCurrentEventPage] = useState(1);
   const EVENTS_PER_PAGE = 5;
 
@@ -2877,10 +2918,11 @@ const Events = () => {
                           )}
                           {(() => {
                             const resolvedSub = resolveEventSubCategory(event, subCategories);
-                            const mainType = (event.category === 'sachnhaminh' || event.category === 'school' || event.category === 'culture' || !event.category) ? 'sachnhaminh' : 'external';
-                            const resolvedMainTypeName = mainType === 'sachnhaminh' 
-                              ? (lang === 'vi' ? 'Sách Nhà Mình' : 'Sach Nha Minh') 
-                              : (lang === 'vi' ? 'Sự kiện bên ngoài' : 'External');
+                            const mainType = resolveEventCategory(event, classifications);
+                            const matchedClassification = classifications.find(c => c.id === mainType);
+                            const resolvedMainTypeName = matchedClassification 
+                              ? (lang === 'vi' ? matchedClassification.name_vi : matchedClassification.name_en) 
+                              : (lang === 'vi' ? 'Sách Nhà Mình' : 'Sach Nha Minh'); 
                             const resolvedSubCategoryName = lang === 'vi' ? resolvedSub.name_vi : resolvedSub.name_en;
                             const typeText = lang === 'vi' ? event.type_vi : event.type_en;
                             const hasValidType = typeText && typeText.trim() !== '' && typeText.trim() !== '—' && typeText.trim() !== '-';
@@ -3223,7 +3265,7 @@ const BookReview = () => {
 };
 
 const Footer = () => {
-  const { config, siteName, siteLogo, contactAddress, contactPhone, facebookUrl, instagramUrl } = useContext(ThemeContext);
+  const { config, siteName, siteLogo, contactAddress, contactPhone, facebookUrl, instagramUrl, showSpotlight, showBookReview } = useContext(ThemeContext);
   const { t, lang } = useContext(LanguageContext);
   const [formData, setFormData] = useState({ name: '', email: '', phone: '', message: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -3288,9 +3330,18 @@ const Footer = () => {
           <div className="md:col-span-2 hidden md:block">
             <h4 className={`font-bold ${config.text} mb-6 uppercase text-sm tracking-widest`}>Menu</h4>
             <ul className="space-y-4">
-              {t.nav.map((item, index) => (
-                <li key={item}><a href={`#${NAV_SLUGS[index]}`} className={`${config.text} opacity-80 hover:opacity-100 transition-all text-sm`}>{item}</a></li>
-              ))}
+              {t.nav.map((item, index) => {
+                const slug = NAV_SLUGS[index];
+                if (slug === 'tieu-diem' && !showSpotlight) return null;
+                if (slug === 'diem-sach' && !showBookReview) return null;
+                return (
+                  <li key={item}>
+                    <a href={`#${slug}`} className={`${config.text} opacity-80 hover:opacity-100 transition-all text-sm`}>
+                      {item}
+                    </a>
+                  </li>
+                );
+              })}
             </ul>
           </div>
 
@@ -3451,6 +3502,9 @@ export default function App() {
   const [books, setBooks] = useState<any[]>([]);
   const [slides, setSlides] = useState<any[]>([]);
   const [subCategories, setSubCategories] = useState<any[]>([]);
+  const [classifications, setClassifications] = useState<any[]>([]);
+  const [showSpotlight, setShowSpotlight] = useState(true);
+  const [showBookReview, setShowBookReview] = useState(true);
 
   useEffect(() => {
     const handleHash = () => setIsAdminView(window.location.hash === '#/admin');
@@ -3469,7 +3523,8 @@ export default function App() {
           { data: galleryData },
           { data: booksData },
           { data: slidesData },
-          { data: subCatsData }
+          { data: subCatsData },
+          { data: classificationsData }
         ] = await Promise.all([
           supabase.from('site_settings').select('*').eq('id', 'global').single(),
           supabase.from('events').select('*'),
@@ -3478,7 +3533,8 @@ export default function App() {
           supabase.from('gallery').select('*'),
           supabase.from('books').select('*'),
           supabase.from('slides').select('*').order('order', { ascending: true }),
-          supabase.from('sub_categories').select('*')
+          supabase.from('sub_categories').select('*'),
+          supabase.from('event_classifications').select('*')
         ]);
 
         if (settingsData) {
@@ -3492,6 +3548,8 @@ export default function App() {
           if (settingsData.instagram_url) setInstagramUrl(settingsData.instagram_url);
           if (settingsData.custom_color) setCustomColor(settingsData.custom_color);
           if (settingsData.custom_font) setCustomFont(settingsData.custom_font);
+          setShowSpotlight(settingsData.show_spotlight !== false);
+          setShowBookReview(settingsData.show_book_review !== false);
         }
 
         const regsCountMap: Record<string, number> = {};
@@ -3547,6 +3605,18 @@ export default function App() {
         }
         
         if (subCatsData) setSubCategories(subCatsData);
+
+        let fetchedClassifications = [];
+        if (classificationsData) {
+          fetchedClassifications = classificationsData;
+        }
+        if (fetchedClassifications.length === 0) {
+          fetchedClassifications = [
+            { id: 'sachnhaminh', name_vi: 'Sách Nhà Mình', name_en: 'Sach Nha Minh' },
+            { id: 'external', name_vi: 'Sự kiện bên ngoài', name_en: 'External Events' }
+          ];
+        }
+        setClassifications(fetchedClassifications);
       } catch (err) {
         console.error('Lỗi khi tải dữ liệu từ Supabase:', err);
       } finally {
@@ -3596,7 +3666,7 @@ export default function App() {
 
   if (isAdminView) {
     return (
-      <ThemeContext.Provider value={{ theme, setTheme, font, setFont, config: themes[theme], siteName, siteLogo, contactAddress, contactPhone, facebookUrl, instagramUrl, customColor, customFont }}>
+      <ThemeContext.Provider value={{ theme, setTheme, font, setFont, config: themes[theme], siteName, siteLogo, contactAddress, contactPhone, facebookUrl, instagramUrl, customColor, customFont, showSpotlight, showBookReview }}>
          {(theme === 'custom' || font === 'custom') && <style>{customStyles}</style>}
          <Admin />
       </ThemeContext.Provider>
@@ -3633,8 +3703,7 @@ export default function App() {
 
   if (searchEventMainType !== 'all') {
     baseEvents = baseEvents.filter(e => {
-      const mainType = (e.category === 'sachnhaminh' || e.category === 'school' || e.category === 'culture' || !e.category) ? 'sachnhaminh' : 'external';
-      return mainType === searchEventMainType;
+      return resolveEventCategory(e, classifications) === searchEventMainType;
     });
   }
 
@@ -3670,10 +3739,10 @@ export default function App() {
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, font, setFont, config, siteName, siteLogo, contactAddress, contactPhone, facebookUrl, instagramUrl, customColor, customFont }}>
+    <ThemeContext.Provider value={{ theme, setTheme, font, setFont, config, siteName, siteLogo, contactAddress, contactPhone, facebookUrl, instagramUrl, customColor, customFont, showSpotlight, showBookReview }}>
       {(theme === 'custom' || font === 'custom') && <style>{customStyles}</style>}
       <LanguageContext.Provider value={{ lang, setLang, t }}>
-        <DataContext.Provider value={{ events, articles, gallery, books, slides, subCategories }}>
+        <DataContext.Provider value={{ events, articles, gallery, books, slides, subCategories, classifications }}>
           <div className={`min-h-screen transition-colors duration-1000 ${config.bg} ${config.text} ${fontClass} selection:bg-black selection:text-white`}>
           {isLoading ? (
             <div className="flex flex-col items-center justify-center min-h-[100dvh] w-full">
@@ -3786,8 +3855,11 @@ export default function App() {
                               className={`w-full bg-white border border-gray-200/80 rounded-xl px-4 py-3 text-xs font-bold uppercase tracking-wider ${config.text} outline-none focus:ring-2 focus:ring-black/5 focus:border-black/25 transition-all appearance-none cursor-pointer pr-10 shadow-sm`}
                             >
                               <option value="all">{lang === 'vi' ? 'Tất cả phân loại' : 'All Classifications'}</option>
-                              <option value="sachnhaminh">{lang === 'vi' ? 'Sách Nhà Mình' : 'Sach Nha Minh'}</option>
-                              <option value="external">{lang === 'vi' ? 'Sự kiện bên ngoài' : 'External Events'}</option>
+                              {classifications.map(c => (
+                                <option key={c.id} value={c.id}>
+                                  {lang === 'vi' ? c.name_vi : c.name_en}
+                                </option>
+                              ))}
                             </select>
                             <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none opacity-50">
                               <ChevronDown className="w-4 h-4" />
@@ -3830,10 +3902,11 @@ export default function App() {
                         const displayRegistrants = `${approved} ${lang === 'vi' ? 'đăng ký' : 'registered'}`;
 
                         const resolvedSub = resolveEventSubCategory(event, subCategories);
-                        const mainType = (event.category === 'sachnhaminh' || event.category === 'school' || event.category === 'culture' || !event.category) ? 'sachnhaminh' : 'external';
-                        const resolvedMainTypeName = mainType === 'sachnhaminh' 
-                          ? (lang === 'vi' ? 'Sách Nhà Mình' : 'Sach Nha Minh') 
-                          : (lang === 'vi' ? 'Sự kiện bên ngoài' : 'External');
+                        const mainType = resolveEventCategory(event, classifications);
+                        const matchedClassification = classifications.find(c => c.id === mainType);
+                        const resolvedMainTypeName = matchedClassification 
+                          ? (lang === 'vi' ? matchedClassification.name_vi : matchedClassification.name_en) 
+                          : (lang === 'vi' ? 'Sách Nhà Mình' : 'Sach Nha Minh'); 
                         const resolvedSubCategoryName = lang === 'vi' ? resolvedSub.name_vi : resolvedSub.name_en;
                         
                         return (
@@ -4124,18 +4197,20 @@ export default function App() {
             </section>
             <CultureChronicles />
             {/* <Services /> */}
-            <NewsSection />
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={theme}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.5 }}
-              >
-                <BookReview />
-              </motion.div>
-            </AnimatePresence>
+            {showSpotlight && <NewsSection />}
+            {showBookReview && (
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={theme}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <BookReview />
+                </motion.div>
+              </AnimatePresence>
+            )}
             <FloatingButtons />
           </main>
           <Footer />

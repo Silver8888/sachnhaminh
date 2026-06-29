@@ -44,3 +44,34 @@ body {
   -ms-overflow-style: none;  /* IE and Edge */
   scrollbar-width: none;  /* Firefox */
 }
+
+/* Custom ReactQuill font size and alignment global styles */
+.ql-snow .ql-picker.ql-size .ql-picker-label::before,
+.ql-snow .ql-picker.ql-size .ql-picker-item::before {
+  content: attr(data-value) !important;
+}
+.ql-snow .ql-picker.ql-size .ql-picker-label:not([data-value])::before,
+.ql-snow .ql-picker.ql-size .ql-picker-item:not([data-value])::before {
+  content: 'Chữ thường' !important;
+}
+
+.ql-align-center {
+  text-align: center !important;
+}
+.ql-align-right {
+  text-align: right !important;
+}
+.ql-align-justify {
+  text-align: justify !important;
+}
+
+/* Base styling support for standard size classes if used */
+.ql-size-small {
+  font-size: 0.75em !important;
+}
+.ql-size-large {
+  font-size: 1.5em !important;
+}
+.ql-size-huge {
+  font-size: 2.25em !important;
+}

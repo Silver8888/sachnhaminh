@@ -47,6 +47,7 @@ create table slides (
     content_en text,
     effect text,
     "order" integer default 0,
+    heading_font_size integer,
     created_at timestamp with time zone default timezone('utc'::text, now()) not null,
     updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
@@ -113,6 +114,15 @@ create table books (
 -- Bảng Danh mục sự kiện con (Global)
 create table sub_categories (
     id uuid primary key default gen_random_uuid(),
+    name_vi text not null,
+    name_en text not null,
+    created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+    updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Bảng Phân loại sự kiện chính
+create table event_classifications (
+    id text primary key,
     name_vi text not null,
     name_en text not null,
     created_at timestamp with time zone default timezone('utc'::text, now()) not null,
@@ -203,9 +213,11 @@ alter table articles enable row level security;
 alter table gallery enable row level security;
 alter table books enable row level security;
 alter table sub_categories enable row level security;
+alter table event_classifications enable row level security;
 alter table events enable row level security;
 alter table registrations enable row level security;
 alter table contacts enable row level security;
+
 
 -- Hàm kiểm tra người dùng có phải admin không
 create or replace function public.is_admin()
@@ -257,6 +269,11 @@ create policy "Chỉ Admin quản lý books" on books for all using (public.is_a
 create policy "Cho phép mọi người đọc sub_categories" on sub_categories for select using (true);
 create policy "Chỉ Admin quản lý sub_categories" on sub_categories for all using (public.is_admin());
 
+-- CHÍNH SÁCH: event_classifications
+create policy "Cho phép mọi người đọc event_classifications" on event_classifications for select using (true);
+create policy "Chỉ Admin quản lý event_classifications" on event_classifications for all using (public.is_admin());
+
+
 -- CHÍNH SÁCH: events
 create policy "Cho phép mọi người đọc events" on events for select using (true);
 create policy "Chỉ Admin quản lý events" on events for all using (public.is_admin());
@@ -283,3 +300,47 @@ insert into sub_categories (name_vi, name_en) values
 ('Thể Thao', 'Sport'),
 ('Thẩm Mỹ', 'Aesthetics')
 on conflict do nothing;
+
+-- Khởi tạo phân loại sự kiện mặc định
+insert into event_classifications (id, name_vi, name_en) values
+('sachnhaminh', 'Sách Nhà Mình', 'Sach Nha Minh'),
+('external', 'Sự kiện bên ngoài', 'External Events')
+on conflict (id) do nothing;
+
+
+-- Bảng Site Settings (Cấu hình Website)
+CREATE TABLE IF NOT EXISTS public.site_settings (
+    id text PRIMARY KEY,
+    theme text,
+    font text,
+    site_name text,
+    site_logo text,
+    contact_address text,
+    contact_phone text,
+    facebook_url text,
+    instagram_url text,
+    custom_color text,
+    custom_font text,
+    show_spotlight boolean DEFAULT true,
+    show_book_review boolean DEFAULT true,
+    created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Kích hoạt RLS
+ALTER TABLE public.site_settings ENABLE ROW LEVEL SECURITY;
+
+-- Chính sách đọc site_settings công khai
+DROP POLICY IF EXISTS "Cho phép đọc site_settings công khai" ON public.site_settings;
+CREATE POLICY "Cho phép đọc site_settings công khai" ON public.site_settings FOR SELECT USING (true);
+
+-- Chính sách chỉnh sửa site_settings chỉ dành cho Admin
+DROP POLICY IF EXISTS "Chỉ Admin được chỉnh sửa site_settings" ON public.site_settings;
+CREATE POLICY "Chỉ Admin được chỉnh sửa site_settings" ON public.site_settings FOR ALL USING (public.is_admin());
+
+-- Khởi tạo dữ liệu cấu hình mặc định
+INSERT INTO public.site_settings (id, theme, font, site_name, show_spotlight, show_book_review) VALUES
+    ('global', 'pastelRed', 'serif', 'Sách nhà Mình', true, true)
+ON CONFLICT (id) DO NOTHING;
+
+

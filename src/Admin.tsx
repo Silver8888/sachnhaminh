@@ -7,7 +7,7 @@ import { FileText, Image as ImageIcon, LogOut, Edit3, Trash2, Plus, Calendar, Ty
 import { motion, AnimatePresence } from 'motion/react';
 import { sendRegistrationEmail } from './utils/emailService';
 import * as XLSX from 'xlsx';
-import ReactQuill from 'react-quill-new';
+import ReactQuill, { Quill } from 'react-quill-new';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, LineChart, Line, Legend
@@ -15,11 +15,17 @@ import {
 import 'react-quill-new/dist/quill.snow.css';
 import { CheckinScanner } from './components/CheckinScanner';
 
+// Cấu hình cỡ chữ tùy chọn dạng số (pixel) cho ReactQuill dưới dạng inline style
+const Size = Quill.import('attributors/style/size');
+Size.whitelist = ['12px', '14px', '16px', '18px', '20px', '24px', '28px', '32px', '36px', '40px', '48px', '56px', '64px', '72px', '80px', '96px'];
+Quill.register(Size, true);
+
+
 const quillModules = {
   toolbar: [
     [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
     [{ 'font': [] }],
-    [{ 'size': ['small', false, 'large', 'huge'] }],
+    [{ 'size': ['12px', '14px', '16px', '18px', '20px', '24px', '28px', '32px', '36px', '40px', '48px', '56px', '64px', '72px', '80px', '96px'] }],
     ['bold', 'italic', 'underline', 'strike'],
     [{ 'color': [] }, { 'background': [] }],
     [{ 'align': [] }],
@@ -31,7 +37,7 @@ const quillModules = {
 const quillModulesSimple = {
   toolbar: [
     [{ 'font': [] }],
-    [{ 'size': ['small', false, 'large', 'huge'] }],
+    [{ 'size': ['12px', '14px', '16px', '18px', '20px', '24px', '28px', '32px', '36px', '40px', '48px', '56px', '64px', '72px', '80px', '96px'] }],
     ['bold', 'italic', 'underline', 'strike'],
     [{ 'color': [] }, { 'background': [] }],
     [{ 'align': [] }],
@@ -64,6 +70,8 @@ export const Admin = () => {
   const [contactPhone, setContactPhone] = useState('090 457 03 83');
   const [facebookUrl, setFacebookUrl] = useState('https://www.facebook.com/sachnhaminh');
   const [instagramUrl, setInstagramUrl] = useState('');
+  const [showSpotlight, setShowSpotlight] = useState(true);
+  const [showBookReview, setShowBookReview] = useState(true);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [isSettingsLoading, setIsSettingsLoading] = useState(true);
@@ -88,6 +96,8 @@ export const Admin = () => {
   const [editingSlide, setEditingSlide] = useState<any>(null);
   const [editingSubCategory, setEditingSubCategory] = useState<any>(null);
   const [editingArticleCategory, setEditingArticleCategory] = useState<any>(null);
+  const [editingClassification, setEditingClassification] = useState<any>(null);
+  const [classifications, setClassifications] = useState<any[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 
   const [selectedEventForRegistrations, setSelectedEventForRegistrations] = useState<any>(null);
@@ -115,6 +125,8 @@ export const Admin = () => {
       roles: 'Tài khoản',
       contacts: 'Liên hệ',
       categories: 'Danh mục sự kiện',
+      classifications: 'Phân loại sự kiện',
+      addClassification: 'Thêm Phân Loại',
       articleCategories: 'Danh mục bài viết',
       emailTemplates: 'Mẫu Email',
       addArticleCategory: 'Thêm Danh Mục BV',
@@ -144,6 +156,8 @@ export const Admin = () => {
       roles: 'Users / Roles',
       contacts: 'Contacts',
       categories: 'Event Categories',
+      classifications: 'Event Classifications',
+      addClassification: 'Add Classification',
       articleCategories: 'Article Categories',
       emailTemplates: 'Email Templates',
       addArticleCategory: 'Add Article Category',
@@ -223,6 +237,35 @@ export const Admin = () => {
     const fetchSubCategories = async () => {
     const { data, error } = await supabase.from('sub_categories').select('*');
     if (!error && data) setSubCategories(data);
+  };
+
+  const fetchClassifications = async () => {
+    const { data, error } = await supabase.from('event_classifications').select('*');
+    if (!error && data) {
+      setClassifications(data.length > 0 ? data : [
+        { id: 'sachnhaminh', name_vi: 'Sách Nhà Mình', name_en: 'Sach Nha Minh' },
+        { id: 'external', name_vi: 'Sự kiện bên ngoài', name_en: 'External Events' }
+      ]);
+    } else {
+      setClassifications([
+        { id: 'sachnhaminh', name_vi: 'Sách Nhà Mình', name_en: 'Sach Nha Minh' },
+        { id: 'external', name_vi: 'Sự kiện bên ngoài', name_en: 'External Events' }
+      ]);
+    }
+  };
+
+  const resolveEventCategory = (event: any, classificationsList: any[] = []) => {
+    const cat = event?.category;
+    if (!cat || cat === 'school' || cat === 'culture') {
+      return 'sachnhaminh';
+    }
+    if (classificationsList && classificationsList.length > 0 && classificationsList.some(c => c.id === cat)) {
+      return cat;
+    }
+    if (cat === 'external') {
+      return 'external';
+    }
+    return 'sachnhaminh';
   };
 
   const seedDefaultCategories = async () => {
@@ -432,6 +475,7 @@ export const Admin = () => {
       fetchRoles();
       fetchContacts();
       fetchSubCategories();
+      fetchClassifications();
       fetchArticleCategories();
       fetchEmailTemplates();
     }
@@ -453,6 +497,8 @@ export const Admin = () => {
         if (data.instagram_url) setInstagramUrl(data.instagram_url);
         if (data.custom_color) setCustomColor(data.custom_color);
         if (data.custom_font) setCustomFont(data.custom_font);
+        if (data.show_spotlight !== undefined) setShowSpotlight(data.show_spotlight);
+        if (data.show_book_review !== undefined) setShowBookReview(data.show_book_review);
       }
       setIsSettingsLoading(false);
     });
@@ -560,6 +606,7 @@ export const Admin = () => {
       content_en: editingSlide.content_en || editingSlide.content_vi || '',
       effect: editingSlide.effect || 'fade',
       order: parseInt(editingSlide.order) || 0,
+      heading_font_size: editingSlide.heading_font_size ? parseInt(editingSlide.heading_font_size) : null,
     };
     if (editingSlide.id === 'NEW') {
       try {
@@ -678,7 +725,9 @@ export const Admin = () => {
         facebook_url: facebookUrl,
         instagram_url: instagramUrl,
         custom_color: customColor,
-        custom_font: customFont
+        custom_font: customFont,
+        show_spotlight: showSpotlight,
+        show_book_review: showBookReview
       });
       if (error) throw error;
       alert('Đã lưu cấu hình! Vui lòng tải lại trang (F5) để thấy thay đổi.');
@@ -1163,6 +1212,49 @@ export const Admin = () => {
     }
   };
 
+  const saveClassification = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingClassification) return;
+    const payload = {
+      name_vi: editingClassification.name_vi || '',
+      name_en: editingClassification.name_en || ''
+    };
+    try {
+      if (editingClassification.id === 'NEW') {
+        const newId = 'class_' + Math.random().toString(36).substring(2, 11);
+        const { error } = await supabase.from('event_classifications').insert([{ id: newId, ...payload }]);
+        if (error) throw error;
+        alert('Thêm phân loại thành công!');
+      } else {
+        const { error } = await supabase.from('event_classifications').update(payload).eq('id', editingClassification.id);
+        if (error) throw error;
+        alert('Cập nhật phân loại thành công!');
+      }
+      setEditingClassification(null);
+      fetchClassifications();
+    } catch (err: any) {
+      console.error(err);
+      alert('Lỗi lưu phân loại: ' + err.message);
+    }
+  };
+
+  const deleteClassification = async (id: string) => {
+    if (id === 'sachnhaminh' || id === 'external') {
+      alert('Không thể xóa phân loại hệ thống mặc định!');
+      return;
+    }
+    if (!window.confirm('Bạn có chắc chắn muốn xóa phân loại này? Các sự kiện thuộc phân loại này có thể hiển thị không đúng.')) return;
+    try {
+      const { error } = await supabase.from('event_classifications').delete().eq('id', id);
+      if (error) throw error;
+      alert('Xóa phân loại thành công!');
+      fetchClassifications();
+    } catch (err: any) {
+      console.error(err);
+      alert('Lỗi xóa phân loại: ' + err.message);
+    }
+  };
+
   const deleteArticle = async (id: string) => {
     if (window.confirm('Bạn có chắc chắn muốn xóa bài viết này?')) {
       await supabase.from('articles').delete().eq('id', id);
@@ -1388,6 +1480,14 @@ export const Admin = () => {
           </button>
           
           <button 
+            onClick={() => setActiveTab('classifications')} 
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'classifications' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}
+          >
+            <Tag className="w-5 h-5" />
+            {t.classifications}
+          </button>
+          
+          <button 
             onClick={() => setActiveTab('articleCategories')} 
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'articleCategories' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}
           >
@@ -1494,6 +1594,11 @@ export const Admin = () => {
              {activeTab === 'categories' && (
                 <button onClick={() => setEditingSubCategory({ id: 'NEW', name_vi: '', name_en: '' })} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors flex items-center gap-2 shadow-sm">
                   <Plus className="w-4 h-4" /> {t.addCategory}
+                </button>
+             )}
+             {activeTab === 'classifications' && (
+                <button onClick={() => setEditingClassification({ id: 'NEW', name_vi: '', name_en: '' })} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors flex items-center gap-2 shadow-sm">
+                  <Plus className="w-4 h-4" /> {t.addClassification}
                 </button>
              )}
              
@@ -2042,7 +2147,13 @@ export const Admin = () => {
                           <div className="flex flex-col gap-1">
                              <span className="truncate font-bold" title={event.title_vi}>{event.title_vi}</span>
                              <div className="text-[10px] text-gray-500 flex items-center gap-1">
-                               <span className="capitalize font-semibold">{event.category === 'sachnhaminh' ? 'Sách Nhà Mình' : event.category === 'external' ? 'Sự kiện ngoài' : (event.category === 'school' ? 'Sách Nhà Mình' : event.category === 'culture' ? 'Sách Nhà Mình' : event.category || 'Mặc định')}</span>
+                               <span className="capitalize font-semibold">
+                                 {(() => {
+                                   const catId = resolveEventCategory(event, classifications);
+                                   const matchedCat = classifications.find(c => c.id === catId);
+                                   return matchedCat ? matchedCat.name_vi : 'Sách Nhà Mình';
+                                 })()}
+                               </span>
                                <span>&gt;</span>
                                <span className="text-blue-600 font-semibold truncate">
                                  {subCategories.find(c => c.id === event.subCategory)?.name_vi || 'Mặc định'}
@@ -2587,6 +2698,43 @@ export const Admin = () => {
             </div>
           )}
 
+          {activeTab === 'classifications' && (
+            <div className="space-y-6 text-left max-w-4xl mx-auto">
+              <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden flex flex-col">
+                <div className="p-4 border-b border-gray-100 bg-gray-50/50">
+                  <h3 className="font-bold text-gray-900 text-sm">Danh sách Phân loại sự kiện</h3>
+                  <p className="text-xs text-gray-500 mt-0.5">Các loại sự kiện chính (ví dụ: Sách Nhà Mình, Sự kiện bên ngoài)</p>
+                </div>
+                <div className="divide-y divide-gray-100 flex-1 min-h-[300px]">
+                  {classifications.map((cat, idx) => (
+                    <div key={cat.id} className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs font-bold text-gray-400">#{idx + 1}</span>
+                        <div>
+                          <div className="font-medium text-gray-900 text-sm">{cat.name_vi}</div>
+                          <div className="text-xs text-gray-500">{cat.name_en} <span className="text-[10px] text-gray-400 ml-2">(ID: {cat.id})</span></div>
+                        </div>
+                      </div>
+                      <div className="flex gap-1">
+                        <button onClick={() => setEditingClassification(cat)} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Sửa">
+                          <Edit3 className="w-4 h-4" />
+                        </button>
+                        {cat.id !== 'sachnhaminh' && cat.id !== 'external' && (
+                          <button onClick={() => deleteClassification(cat.id)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Xóa">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  {classifications.length === 0 && (
+                    <div className="p-12 text-center text-gray-400 text-xs">Không có phân loại nào. Hãy thêm phân loại mới.</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {activeTab === 'settings' && (
              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                 <div className="mb-6 flex justify-between items-center">
@@ -2649,6 +2797,26 @@ export const Admin = () => {
                             </div>
                          </div>
                       )}
+                   </div>
+
+                   {/* Visibility Toggles */}
+                   <div className="bg-gray-50 p-6 rounded-xl border border-gray-100">
+                      <h3 className="font-semibold text-gray-800 mb-3">Hiển thị chuyên mục ngoài trang chủ</h3>
+                      <p className="text-xs text-gray-500 mb-4">Bật/Tắt hiển thị các mục trên thanh Menu và nội dung trang chủ</p>
+                      <div className="flex flex-col sm:flex-row gap-6">
+                         <label className="flex items-center gap-3 cursor-pointer select-none">
+                            <input type="checkbox" checked={showSpotlight} onChange={e => setShowSpotlight(e.target.checked)} className="w-5 h-5 rounded text-blue-600 focus:ring-blue-500 border-gray-300 cursor-pointer" />
+                            <div>
+                               <span className="text-sm font-medium text-gray-700">Hiện chuyên mục "Tiêu điểm" (Tin tức / Bài viết)</span>
+                            </div>
+                         </label>
+                         <label className="flex items-center gap-3 cursor-pointer select-none">
+                            <input type="checkbox" checked={showBookReview} onChange={e => setShowBookReview(e.target.checked)} className="w-5 h-5 rounded text-blue-600 focus:ring-blue-500 border-gray-300 cursor-pointer" />
+                            <div>
+                               <span className="text-sm font-medium text-gray-700">Hiện chuyên mục "Điểm sách"</span>
+                            </div>
+                         </label>
+                      </div>
                    </div>
 
                    {/* Info */}
@@ -2770,6 +2938,11 @@ export const Admin = () => {
                            <textarea value={editingSlide.description_en || ''} onChange={e => setEditingSlide({...editingSlide, description_en: e.target.value})} className="w-full border border-gray-300 px-3 py-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[80px]" />
                         </div>
                      </div>
+
+                      <div className="space-y-1">
+                         <label className="text-xs font-medium text-gray-500">Cỡ chữ tiêu đề lớn (pixel - Ví dụ: 72)</label>
+                         <input type="number" placeholder="Mặc định" value={editingSlide.heading_font_size || ''} onChange={e => setEditingSlide({...editingSlide, heading_font_size: e.target.value})} className="w-full border border-gray-300 bg-white px-3 py-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                      </div>
 
                      <div className="space-y-4">
                         <div className="flex bg-gray-100 p-1 rounded-lg w-fit">
@@ -3111,8 +3284,9 @@ export const Admin = () => {
                         <div className="space-y-1">
                            <label className="text-xs font-medium text-gray-500">Loại sự kiện chính</label>
                            <select value={editingEvent.category || 'sachnhaminh'} onChange={e => setEditingEvent({...editingEvent, category: e.target.value, subCategory: ''})} className="w-full border border-gray-300 px-3 py-2 text-sm rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                             <option value="sachnhaminh">Sách Nhà Mình</option>
-                             <option value="external">Sự kiện bên ngoài</option>
+                             {classifications.map(c => (
+                               <option key={c.id} value={c.id}>{c.name_vi} / {c.name_en}</option>
+                             ))}
                            </select>
                         </div>
                         <div className="space-y-1">
@@ -3424,6 +3598,44 @@ export const Admin = () => {
                 <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
                   <button type="button" onClick={() => setEditingSubCategory(null)} className="px-5 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">Hủy</button>
                   <button type="submit" form="subcategory-form" className="px-5 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg shadow-sm hover:bg-blue-700 transition-colors">Lưu danh mục</button>
+                </div>
+              </motion.div>
+            </div>
+         )}
+      </AnimatePresence>
+
+      {/* Classification Modal */}
+      <AnimatePresence>
+         {editingClassification && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" onClick={() => setEditingClassification(null)} />
+              <motion.div initial={{ opacity: 0, scale: 0.95, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 10 }} className="relative bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden text-left">
+                <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                  <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                     <Tag className="w-5 h-5 text-blue-600" />
+                     {editingClassification.id === 'NEW' ? t.addClassification : 'Sửa Phân Loại'}
+                  </h2>
+                  <button onClick={() => setEditingClassification(null)} className="text-gray-400 hover:text-gray-600">
+                     <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                  </button>
+                </div>
+
+                <div className="p-6">
+                  <form id="classification-form" onSubmit={saveClassification} className="space-y-4">
+                     <div className="space-y-1">
+                        <label className="text-xs font-medium text-gray-500">Tên phân loại (Tiếng Việt) <span className="text-red-500">*</span></label>
+                        <input required type="text" placeholder="Ví dụ: Sách Nhà Mình" value={editingClassification.name_vi || ''} onChange={e => setEditingClassification({...editingClassification, name_vi: e.target.value})} className="w-full border border-gray-300 px-3 py-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                     </div>
+                     <div className="space-y-1">
+                        <label className="text-xs font-medium text-gray-500">Tên phân loại (Tiếng Anh) <span className="text-red-500">*</span></label>
+                        <input required type="text" placeholder="Ví dụ: Sach Nha Minh" value={editingClassification.name_en || ''} onChange={e => setEditingClassification({...editingClassification, name_en: e.target.value})} className="w-full border border-gray-300 px-3 py-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                     </div>
+                  </form>
+                </div>
+
+                <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
+                  <button type="button" onClick={() => setEditingClassification(null)} className="px-5 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">Hủy</button>
+                  <button type="submit" form="classification-form" className="px-5 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg shadow-sm hover:bg-blue-700 transition-colors">Lưu phân loại</button>
                 </div>
               </motion.div>
             </div>
