@@ -3878,6 +3878,25 @@ export default function App() {
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [bookingEventId, setBookingEventId] = useState<number | undefined>(undefined);
   const [expandedEventId, setExpandedEventId] = useState<number | null>(null);
+  const [inlineActiveSubTab, setInlineActiveSubTab] = useState<'articles' | 'images' | 'videos'>('articles');
+  const [inlineActiveVideoId, setInlineActiveVideoId] = useState<string | null>(null);
+  const [inlineActiveImageFolderId, setInlineActiveImageFolderId] = useState<string | null>(null);
+  const [inlineReadingArticle, setInlineReadingArticle] = useState<any | null>(null);
+  const [inlineMediaLightbox, setInlineMediaLightbox] = useState<{ isOpen: boolean, index: number, items: any[] }>({ isOpen: false, index: 0, items: [] });
+
+  // Reset inline states when expanded event changes
+  useEffect(() => {
+    if (expandedEventId) {
+      const currentRelatedArticles = articles.filter(a => String(a.eventId || a.event_id) === String(expandedEventId));
+      if (currentRelatedArticles.length > 0) {
+        setInlineActiveSubTab('articles');
+      } else {
+        setInlineActiveSubTab('images');
+      }
+      setInlineActiveVideoId(null);
+      setInlineActiveImageFolderId(null);
+    }
+  }, [expandedEventId, articles]);
   const [isAdminView, setIsAdminView] = useState(window.location.hash === '#/admin');
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
@@ -4170,6 +4189,104 @@ export default function App() {
             )}
           </AnimatePresence>
 
+          {/* Inline Article Reader Overlay Modal */}
+          <AnimatePresence>
+            {inlineReadingArticle && (
+              <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+                <motion.div 
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} 
+                  className="absolute inset-0 bg-black/50 backdrop-blur-sm" 
+                  onClick={() => setInlineReadingArticle(null)} 
+                />
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+                  className={`relative bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col overflow-hidden text-left border border-black/5 z-10`}
+                >
+                  <div className="px-6 py-4 border-b border-black/[0.05] flex justify-between items-center bg-gray-50/50">
+                    <span className={`text-[10px] font-bold uppercase tracking-widest ${config.accentText} bg-black/5 py-1 px-3 rounded-full`}>
+                      {inlineReadingArticle.category || 'Tin sự kiện'}
+                    </span>
+                    <button onClick={() => setInlineReadingArticle(null)} className="text-gray-400 hover:text-gray-600">
+                      <X className="w-6 h-6" />
+                    </button>
+                  </div>
+                  <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6">
+                    {inlineReadingArticle.image && (
+                      <img src={inlineReadingArticle.image} alt={inlineReadingArticle.title_vi} className="w-full aspect-[21/9] object-cover rounded-2xl border border-black/5 shadow-sm" />
+                    )}
+                    <div>
+                      <h3 className={`text-2xl font-bold ${config.text} leading-tight`}>
+                        {lang === 'vi' ? inlineReadingArticle.title_vi : inlineReadingArticle.title_en || inlineReadingArticle.title_vi}
+                      </h3>
+                      <span className="text-xs opacity-40 block mt-2">{inlineReadingArticle.date}</span>
+                    </div>
+                    <div 
+                      className="opacity-90 leading-relaxed text-base max-w-none ql-snow ql-editor p-0"
+                      dangerouslySetInnerHTML={{ __html: cleanHtmlContent(lang === 'vi' ? inlineReadingArticle.content_vi : inlineReadingArticle.content_en || inlineReadingArticle.content_vi) }}
+                    />
+                  </div>
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
+
+          {/* Inline Lightbox Overlay Modal */}
+          <AnimatePresence>
+            {inlineMediaLightbox.isOpen && inlineMediaLightbox.items.length > 0 && (
+              <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+                <motion.div 
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} 
+                  className="absolute inset-0 bg-black/90 backdrop-blur-sm" 
+                  onClick={() => setInlineMediaLightbox({ isOpen: false, index: 0, items: [] })}
+                />
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+                  className="relative max-w-5xl max-h-[85vh] flex flex-col items-center justify-center z-10"
+                >
+                  <button 
+                    onClick={() => setInlineMediaLightbox({ isOpen: false, index: 0, items: [] })} 
+                    className="absolute -top-12 right-0 p-2 text-white/70 hover:text-white transition-all bg-white/10 hover:bg-white/20 rounded-full"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                  
+                  <div className="relative w-full h-full flex items-center justify-center">
+                    {inlineMediaLightbox.items.length > 1 && (
+                      <button 
+                        onClick={() => setInlineMediaLightbox(prev => ({ ...prev, index: (prev.index - 1 + prev.items.length) % prev.items.length }))}
+                        className="absolute left-4 p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all z-20"
+                      >
+                        <ChevronLeft className="w-6 h-6" />
+                      </button>
+                    )}
+                    
+                    <img 
+                      src={parseDriveUrl(inlineMediaLightbox.items[inlineMediaLightbox.index]?.url || '', 'image')} 
+                      alt={inlineMediaLightbox.items[inlineMediaLightbox.index]?.title || 'Lightbox'} 
+                      className="max-w-full max-h-[75vh] object-contain rounded-lg shadow-2xl"
+                      referrerPolicy="no-referrer"
+                    />
+
+                    {inlineMediaLightbox.items.length > 1 && (
+                      <button 
+                        onClick={() => setInlineMediaLightbox(prev => ({ ...prev, index: (prev.index + 1) % prev.items.length }))}
+                        className="absolute right-4 p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all z-20"
+                      >
+                        <ChevronRight className="w-6 h-6" />
+                      </button>
+                    )}
+                  </div>
+                  
+                  {inlineMediaLightbox.items[inlineMediaLightbox.index]?.title && (
+                    <p className="mt-4 text-sm text-white/80 font-medium">
+                      {inlineMediaLightbox.items[inlineMediaLightbox.index].title}
+                    </p>
+                  )}
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
+
           <main>
             <Hero 
               onBookClick={() => handleOpenBooking()} 
@@ -4290,6 +4407,8 @@ export default function App() {
                     <div className="space-y-8">
                       {displayEvents.map((event, idx) => {
                         const isExpanded = expandedEventId === event.id;
+                        const relatedArticles = articles.filter(a => String(a.eventId || a.event_id) === String(event.id));
+                        const relatedMedia = gallery.filter(g => String(g.eventId || g.event_id) === String(event.id));
                         const approved = event.approvedCount ? parseInt(event.approvedCount as string) : (((event.id * 13) % 40) + 12);
                         const displayRegistrants = `${approved} ${lang === 'vi' ? 'đăng ký' : 'registered'}`;
 
@@ -4513,6 +4632,222 @@ export default function App() {
       <div className="p-8 md:p-12 md:px-12 bg-white/40 backdrop-blur-sm">
         <div className="flex flex-col justify-between">
           <div className="space-y-6">
+            {/* Tài liệu đính kèm inline (Tabs giống Theo dòng văn hóa) */}
+            {(relatedArticles.length > 0 || relatedMedia.length > 0) && (
+              <div className="mb-10 border-b border-black/5 pb-8">
+                <label className="text-[10px] font-bold uppercase tracking-widest opacity-30 mb-4 block">
+                  {lang === 'vi' ? 'Tài liệu & Truyền thông sự kiện' : 'Event Documentation & Media'}
+                </label>
+                
+                {/* Sub tabs */}
+                <div className="flex gap-2 border-b border-black/[0.05] pb-2 mb-6">
+                  {relatedArticles.length > 0 && (
+                    <button
+                      onClick={() => setInlineActiveSubTab('articles')}
+                      className={`pb-2 px-4 text-sm font-bold uppercase tracking-wider border-b-2 transition-all ${
+                        inlineActiveSubTab === 'articles' 
+                          ? `border-black text-black` 
+                          : 'border-transparent text-gray-400 hover:text-black'
+                      }`}
+                    >
+                      {lang === 'vi' ? `Tin sự kiện (${relatedArticles.length})` : `Articles (${relatedArticles.length})`}
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setInlineActiveSubTab('images')}
+                    className={`pb-2 px-4 text-sm font-bold uppercase tracking-wider border-b-2 transition-all ${
+                      inlineActiveSubTab === 'images' 
+                        ? `border-black text-black` 
+                        : 'border-transparent text-gray-400 hover:text-black'
+                    }`}
+                  >
+                    {lang === 'vi' ? `Hình ảnh (${relatedMedia.filter(m => m.type !== 'video').length})` : `Images (${relatedMedia.filter(m => m.type !== 'video').length})`}
+                  </button>
+                  <button
+                    onClick={() => setInlineActiveSubTab('videos')}
+                    className={`pb-2 px-4 text-sm font-bold uppercase tracking-wider border-b-2 transition-all ${
+                      inlineActiveSubTab === 'videos' 
+                        ? `border-black text-black` 
+                        : 'border-transparent text-gray-400 hover:text-black'
+                    }`}
+                  >
+                    {lang === 'vi' ? `Video (${relatedMedia.filter(m => m.type === 'video').length})` : `Videos (${relatedMedia.filter(m => m.type === 'video').length})`}
+                  </button>
+                </div>
+
+                {/* Tab Panels */}
+                <div className="max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
+                  {inlineActiveSubTab === 'articles' && (
+                    <div className="space-y-4">
+                      {relatedArticles.length > 0 ? (
+                        relatedArticles.map(art => (
+                          <div 
+                            key={art.id}
+                            onClick={() => setInlineReadingArticle(art)}
+                            className="p-4 rounded-2xl border border-black/5 bg-black/[0.01] hover:bg-black/[0.03] transition-all cursor-pointer flex gap-4 items-center"
+                          >
+                            {art.image && (
+                              <img src={art.image} alt={art.title_vi} className="w-16 h-16 object-cover rounded-xl border border-black/5" />
+                            )}
+                            <div className="flex-1">
+                              <h5 className="font-bold text-base leading-snug line-clamp-1">{lang === 'vi' ? art.title_vi : art.title_en || art.title_vi}</h5>
+                              <p className="text-xs opacity-60 line-clamp-2 mt-1">{lang === 'vi' ? art.summary_vi : art.summary_en || art.summary_vi}</p>
+                              <span className="text-[10px] opacity-40 block mt-1">{art.date}</span>
+                            </div>
+                            <ChevronRight className="w-5 h-5 opacity-40" />
+                          </div>
+                        ))
+                      ) : (
+                        <div className="py-12 text-center text-gray-400 flex flex-col items-center">
+                          <FileText className="w-10 h-10 opacity-30 mb-2" />
+                          <p className="text-sm">{lang === 'vi' ? 'Chưa có tin sự kiện cho sự kiện này.' : 'No related articles for this event.'}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {inlineActiveSubTab === 'images' && (() => {
+                    const relatedImages = relatedMedia.filter(m => m.type !== 'video');
+                    const imageFolders = relatedImages.filter(item => isDriveFolderUrl(item.url || ''));
+                    const directImages = relatedImages.filter(item => !isDriveFolderUrl(item.url || ''));
+                    
+                    return (
+                      <div className="flex flex-col gap-6">
+                        {imageFolders.length > 0 && (
+                          <div className="flex flex-col gap-4">
+                            {(() => {
+                              const mainItem = imageFolders.find(v => v.id === inlineActiveImageFolderId) || imageFolders[0];
+                              const mainUrl = parseDriveUrl(mainItem.url || '', 'folder');
+                              return (
+                                <div className="relative rounded-2xl overflow-hidden border border-black/5 bg-black/5 h-[300px] w-full shadow-sm">
+                                  <iframe 
+                                    src={mainUrl} 
+                                    className="absolute top-0 left-0 w-full h-full border-none" 
+                                    title={mainItem.title || 'Google Drive Folder'}
+                                  />
+                                </div>
+                              );
+                            })()}
+
+                            {imageFolders.length > 1 && (
+                              <div className="flex gap-2 overflow-x-auto pb-2 pr-2 scrollbar-thin">
+                                {imageFolders.map(item => {
+                                  const isActive = inlineActiveImageFolderId === item.id || (!inlineActiveImageFolderId && item.id === imageFolders[0].id);
+                                  const thumbUrl = item.thumbnail || item.thumbnailUrl || getThumbnailForUrl(item.url || '', 'image') || '';
+                                  return (
+                                    <div 
+                                      key={item.id} 
+                                      onClick={() => setInlineActiveImageFolderId(item.id)}
+                                      className={`flex-shrink-0 cursor-pointer p-1 rounded-xl border transition-all ${isActive ? 'border-black bg-black/5' : 'border-transparent hover:bg-black/5'}`}
+                                    >
+                                      <div className="w-24 aspect-video rounded-lg overflow-hidden relative bg-black/5">
+                                        {thumbUrl !== '' ? (
+                                          <img src={thumbUrl} alt="thumb" className="w-full h-full object-cover" />
+                                        ) : (
+                                          <div className="w-full h-full flex items-center justify-center text-gray-400 bg-gray-100">
+                                            <ImageIcon className="w-4 h-4 opacity-40" />
+                                          </div>
+                                        )}
+                                      </div>
+                                      <span className="text-[10px] font-medium text-gray-700 block text-center mt-1 truncate w-24">{item.title}</span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {directImages.length > 0 && (
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                            {directImages.map((item, idx) => {
+                              const directUrl = parseDriveUrl(item.url || '', 'image');
+                              return (
+                                <button key={item.id} onClick={() => setInlineMediaLightbox({ isOpen: true, index: idx, items: directImages })} className="block w-full aspect-video relative cursor-pointer group/btn rounded-xl overflow-hidden border border-black/5 bg-black/[0.02]">
+                                  <img src={directUrl} alt={item.title || 'Image'} className="w-full h-full object-cover transition-transform group-hover/btn:scale-105 duration-300" referrerPolicy="no-referrer" />
+                                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2 text-white text-[9px] font-medium truncate">
+                                    {item.title || 'Hình ảnh'}
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        {relatedImages.length === 0 && (
+                          <div className="py-12 text-center text-gray-400 flex flex-col items-center">
+                            <ImageIcon className="w-10 h-10 opacity-30 mb-2" />
+                            <p className="text-sm">{lang === 'vi' ? 'Chưa có tài liệu hình ảnh.' : 'No image items for this event.'}</p>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+
+                  {inlineActiveSubTab === 'videos' && (() => {
+                    const relatedVideos = relatedMedia.filter(m => m.type === 'video');
+                    return (
+                      <div className="flex flex-col gap-6">
+                        {relatedVideos.length > 0 ? (
+                          <>
+                            {(() => {
+                              const mainItem = relatedVideos.find(v => v.id === inlineActiveVideoId) || relatedVideos[0];
+                              const isFolder = isDriveFolderUrl(mainItem.video_url || mainItem.videoUrl || mainItem.url || '');
+                              const mainUrl = parseDriveUrl(mainItem.video_url || mainItem.videoUrl || mainItem.url || '', isFolder ? 'folder' : 'video');
+                              return (
+                                <div className={`relative rounded-2xl overflow-hidden border border-black/5 bg-black/5 ${isFolder ? 'h-[300px]' : 'aspect-video'} w-full shadow-sm`}>
+                                  <iframe 
+                                    src={mainUrl} 
+                                    className="absolute top-0 left-0 w-full h-full border-none"
+                                    allow="autoplay; encrypted-media" 
+                                    allowFullScreen
+                                    title={mainItem.title || 'Video'}
+                                  />
+                                </div>
+                              );
+                            })()}
+
+                            {relatedVideos.length > 1 && (
+                              <div className="flex gap-2 overflow-x-auto pb-2 pr-2 scrollbar-thin">
+                                {relatedVideos.map(item => {
+                                  const isActive = inlineActiveVideoId === item.id || (!inlineActiveVideoId && item.id === relatedVideos[0].id);
+                                  const isFolder = isDriveFolderUrl(item.video_url || item.videoUrl || item.url || '');
+                                  const thumbUrl = item.thumbnail || item.thumbnailUrl || getThumbnailForUrl(item.video_url || item.videoUrl || item.url || '', 'video') || '';
+                                  return (
+                                    <div 
+                                      key={item.id} 
+                                      onClick={() => setInlineActiveVideoId(item.id)}
+                                      className={`flex-shrink-0 cursor-pointer p-1 rounded-xl border transition-all ${isActive ? 'border-black bg-black/5' : 'border-transparent hover:bg-black/5'}`}
+                                    >
+                                      <div className="w-24 aspect-video rounded-lg overflow-hidden relative bg-black/5">
+                                        {thumbUrl !== '' ? (
+                                          <img src={thumbUrl} alt="thumb" className="w-full h-full object-cover" />
+                                        ) : (
+                                          <div className="w-full h-full flex items-center justify-center text-gray-400 bg-gray-100">
+                                            <Play className="w-4 h-4 opacity-40" />
+                                          </div>
+                                        )}
+                                      </div>
+                                      <span className="text-[10px] font-medium text-gray-700 block text-center mt-1 truncate w-24">{item.title || (isFolder ? 'Thư mục video' : 'Video')}</span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <div className="py-12 text-center text-gray-400 flex flex-col items-center">
+                            <Play className="w-10 h-10 opacity-30 mb-2" />
+                            <p className="text-sm">{lang === 'vi' ? 'Chưa có tài liệu video.' : 'No video items for this event.'}</p>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+            )}
+
               <div>
                 <label className="text-[10px] font-bold uppercase tracking-widest opacity-30 mb-4 block">{lang === 'vi' ? 'Nội dung chương trình' : 'Program Content'}</label>
                 {(() => {
