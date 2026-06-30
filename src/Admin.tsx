@@ -73,10 +73,13 @@ export const Admin = () => {
   const [showSpotlight, setShowSpotlight] = useState(true);
   const [showBookReview, setShowBookReview] = useState(true);
   const [showCulture, setShowCulture] = useState(true);
+  const [partnersAnimation, setPartnersAnimation] = useState<'left' | 'right' | 'none'>('left');
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [isSettingsLoading, setIsSettingsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'articles' | 'gallery' | 'events' | 'books' | 'roles' | 'slides' | 'contacts' | 'settings' | 'categories' | 'articleCategories' | 'checkin' | 'crm'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'articles' | 'gallery' | 'events' | 'books' | 'roles' | 'slides' | 'contacts' | 'settings' | 'categories' | 'articleCategories' | 'checkin' | 'crm' | 'partners'>('dashboard');
+  const [partners, setPartners] = useState<any[]>([]);
+  const [editingPartner, setEditingPartner] = useState<any>(null);
   const [galleryFilterType, setGalleryFilterType] = useState<'all' | 'image' | 'video'>('all');
   const [galleryFilterEventId, setGalleryFilterEventId] = useState<string>('all');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -145,6 +148,9 @@ export const Admin = () => {
       noArticles: 'Chưa có bài viết. Hãy tạo bản ghi đầu tiên.',
       noGallery: 'Thư viện trống. Hãy tải lên ảnh/video.',
       noSlides: 'Chưa có slide nào.',
+      partners: 'Đối tác thân thiết',
+      addPartner: 'Thêm Đối Tác',
+      noPartners: 'Chưa có đối tác nào.',
     },
     en: {
       portal: 'Admin Portal',
@@ -176,6 +182,9 @@ export const Admin = () => {
       noArticles: 'No articles found. Create your first article.',
       noGallery: 'No gallery items found. Upload some media.',
       noSlides: 'No slides yet.',
+      partners: 'Dear Partners',
+      addPartner: 'Add Partner',
+      noPartners: 'No partners found.',
     }
   }[adminLang];
 
@@ -298,6 +307,11 @@ export const Admin = () => {
   const fetchGallery = async () => {
     const { data, error } = await supabase.from('gallery').select('*');
     if (!error && data) setGallery(data);
+  };
+
+  const fetchPartners = async () => {
+    const { data, error } = await supabase.from('partners').select('*').order('order', { ascending: true });
+    if (!error && data) setPartners(data);
   };
 
   const fetchEvents = async () => {
@@ -481,6 +495,7 @@ export const Admin = () => {
       fetchClassifications();
       fetchArticleCategories();
       fetchEmailTemplates();
+      fetchPartners();
     }
     return () => {
       if (unsubscribeRegistrations) unsubscribeRegistrations();
@@ -503,6 +518,7 @@ export const Admin = () => {
         if (data.show_spotlight !== undefined) setShowSpotlight(data.show_spotlight);
         if (data.show_book_review !== undefined) setShowBookReview(data.show_book_review);
         if (data.show_culture !== undefined) setShowCulture(data.show_culture);
+        if (data.partners_animation !== undefined) setPartnersAnimation(data.partners_animation);
       }
       setIsSettingsLoading(false);
     });
@@ -732,7 +748,8 @@ export const Admin = () => {
         custom_font: customFont,
         show_spotlight: showSpotlight,
         show_book_review: showBookReview,
-        show_culture: showCulture
+        show_culture: showCulture,
+        partners_animation: partnersAnimation
       });
       if (error) throw error;
       alert('Đã lưu cấu hình! Vui lòng tải lại trang (F5) để thấy thay đổi.');
@@ -1179,7 +1196,69 @@ export const Admin = () => {
     }
   };
 
-  const saveSubCategory = async (e: React.FormEvent) => {
+  const savePartner = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPartner) return;
+    try {
+      const payload = {
+        name: editingPartner.name,
+        logo: editingPartner.logo,
+        url: editingPartner.url,
+        order: parseInt(editingPartner.order) || 0
+      };
+      setIsSaving(true);
+      if (editingPartner.id === 'NEW') {
+        const { error } = await supabase.from('partners').insert(payload);
+        if (error) throw error;
+        showNotification('Đã tạo đối tác mới!');
+      } else {
+        const { error } = await supabase.from('partners').update(payload).eq('id', editingPartner.id);
+        if (error) throw error;
+        showNotification('Đã cập nhật đối tác!');
+      }
+      setEditingPartner(null);
+      fetchPartners();
+    } catch (err: any) {
+      console.error('Lỗi khi lưu đối tác:', err);
+      alert('Lỗi: ' + err.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const deletePartner = async (id: number) => {
+    if (!confirm('Bạn có chắc chắn muốn xóa đối tác này?')) return;
+    try {
+      const { error } = await supabase.from('partners').delete().eq('id', id);
+      if (error) throw error;
+      showNotification('Đã xóa đối tác!');
+      fetchPartners();
+    } catch (err: any) {
+      console.error('Lỗi khi xóa đối tác:', err);
+      alert('Lỗi: ' + err.message);
+    }
+  };
+
+  const handlePartnerLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !editingPartner) return;
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `partner-logo-${Date.now()}.${fileExt}`;
+      const filePath = `partners/${fileName}`;
+      
+      const { error: uploadError } = await supabase.storage.from('media').upload(filePath, file);
+      if (uploadError) throw uploadError;
+      
+      const { data: urlData } = supabase.storage.from('media').getPublicUrl(filePath);
+      setEditingPartner({ ...editingPartner, logo: urlData.publicUrl });
+      showNotification('Tải ảnh logo lên thành công!');
+    } catch (err: any) {
+      console.error('Lỗi khi tải logo:', err);
+      alert('Lỗi: ' + err.message);
+    }
+  };
+const saveSubCategory = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingSubCategory) return;
     const payload = {
@@ -1507,6 +1586,14 @@ export const Admin = () => {
             <Mail className="w-5 h-5" />
             {(t as any).emailTemplates}
           </button>
+          
+          <button 
+            onClick={() => setActiveTab('partners')} 
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'partners' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}
+          >
+            <Users className="w-5 h-5" />
+            {t.partners}
+          </button>
 
           <div className="pt-4 mt-2 border-t border-gray-100">
              <button 
@@ -1584,10 +1671,15 @@ export const Admin = () => {
                 </button>
              )}
              {activeTab === 'gallery' && (
-                <button onClick={() => setEditingGallery({ id: 'NEW', type: 'image', title: '' })} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors flex items-center gap-2 shadow-sm">
-                  <Plus className="w-4 h-4" /> {t.addMedia}
-                </button>
-             )}
+                 <button onClick={() => setEditingGallery({ id: 'NEW', type: 'image', title: '' })} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors flex items-center gap-2 shadow-sm">
+                   <Plus className="w-4 h-4" /> {t.addMedia}
+                 </button>
+              )}
+              {activeTab === 'partners' && (
+                 <button onClick={() => setEditingPartner({ id: 'NEW', name: '', logo: '', url: '', order: partners.length + 1 })} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors flex items-center gap-2 shadow-sm">
+                   <Plus className="w-4 h-4" /> {t.addPartner}
+                 </button>
+              )}
              
 
 
@@ -2816,6 +2908,56 @@ export const Admin = () => {
             </div>
           )}
 
+          {activeTab === 'partners' && (
+            <div className="space-y-6 text-left max-w-5xl mx-auto">
+              <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+                <div className="grid grid-cols-12 gap-4 p-4 border-b border-gray-100 bg-gray-50/50 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  <div className="col-span-3">Logo</div>
+                  <div className="col-span-3">Tên Đối Tác</div>
+                  <div className="col-span-4">Website Link</div>
+                  <div className="col-span-2 text-right">Thao tác</div>
+                </div>
+                <div className="divide-y divide-gray-100">
+                  {partners.map(p => (
+                    <div key={p.id} className="grid grid-cols-12 gap-4 p-4 items-center hover:bg-gray-50 transition-colors">
+                      <div className="col-span-3 flex items-center">
+                        {p.logo ? (
+                          <div className="w-24 h-12 p-1 border border-gray-200 rounded-lg bg-gray-50 flex items-center justify-center">
+                            <img src={p.logo} alt={p.name} className="max-w-full max-h-full object-contain" referrerPolicy="no-referrer" />
+                          </div>
+                        ) : (
+                          <div className="w-24 h-12 border border-dashed border-gray-300 rounded-lg flex items-center justify-center text-xs text-gray-400">
+                            Không có logo
+                          </div>
+                        )}
+                      </div>
+                      <div className="col-span-3 font-semibold text-gray-800 text-sm">
+                        {p.name}
+                      </div>
+                      <div className="col-span-4 text-xs text-blue-600 truncate font-mono">
+                        {p.url ? <a href={p.url} target="_blank" rel="noreferrer" className="hover:underline">{p.url}</a> : '—'}
+                      </div>
+                      <div className="col-span-2 flex justify-end gap-2">
+                        <button onClick={() => setEditingPartner(p)} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Sửa">
+                          <Edit3 className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => deletePartner(p.id)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Xóa">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  {partners.length === 0 && (
+                    <div className="p-12 text-center text-gray-500 flex flex-col items-center">
+                      <Users className="w-12 h-12 text-gray-200 mb-3" />
+                      <p>{t.noPartners}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {activeTab === 'settings' && (
              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                 <div className="mb-6 flex justify-between items-center">
@@ -2954,10 +3096,27 @@ export const Admin = () => {
                          </div>
                       </div>
                    </div>
-                </div>
-                )}
-             </div>
-          )}
+
+                    {/* Partners Animation Config */}
+                    <div className="bg-gray-50 p-6 rounded-xl border border-gray-100 mt-6 text-left">
+                       <h3 className="font-semibold text-gray-800 mb-3">Hiệu ứng chạy logo "Đối tác thân thiết"</h3>
+                       <p className="text-xs text-gray-500 mb-4">Chọn hiệu ứng di chuyển cho thanh logo các đối tác thân thiết trên trang chủ</p>
+                       <div className="max-w-xs">
+                          <select 
+                             value={partnersAnimation} 
+                             onChange={e => setPartnersAnimation(e.target.value as any)}
+                             className="w-full border border-gray-300 px-3 py-2 text-sm rounded-lg bg-white"
+                          >
+                             <option value="left">Di chuyển từ Phải sang Trái</option>
+                             <option value="right">Di chuyển từ Trái sang Phải</option>
+                             <option value="none">Không chạy hiệu ứng (Tĩnh)</option>
+                          </select>
+                       </div>
+                    </div>
+                  </div>
+                 )}
+              </div>
+           )}
 
         </main>
       </div>
@@ -3723,6 +3882,61 @@ export const Admin = () => {
                 <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
                   <button type="button" onClick={() => setEditingClassification(null)} className="px-5 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">Hủy</button>
                   <button type="submit" form="classification-form" className="px-5 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg shadow-sm hover:bg-blue-700 transition-colors">Lưu phân loại</button>
+                </div>
+              </motion.div>
+            </div>
+         )}
+      </AnimatePresence>
+
+      {/* Partner Modal */}
+      <AnimatePresence>
+         {editingPartner && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" onClick={() => setEditingPartner(null)} />
+              <motion.div initial={{ opacity: 0, scale: 0.95, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 10 }} className="relative bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden text-left">
+                <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                  <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                     <Users className="w-5 h-5 text-blue-600" />
+                     {editingPartner.id === 'NEW' ? 'Thêm Đối Tác' : 'Sửa Đối Tác'}
+                  </h2>
+                  <button onClick={() => setEditingPartner(null)} className="text-gray-400 hover:text-gray-600">
+                     <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                  </button>
+                </div>
+
+                <div className="p-6">
+                  <form id="partner-form" onSubmit={savePartner} className="space-y-4">
+                     <div className="space-y-1">
+                        <label className="text-xs font-medium text-gray-500">Tên Đối Tác <span className="text-red-500">*</span></label>
+                        <input required type="text" placeholder="Ví dụ: Đại Học Văn Lang" value={editingPartner.name || ''} onChange={e => setEditingPartner({...editingPartner, name: e.target.value})} className="w-full border border-gray-300 px-3 py-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                     </div>
+                     
+                     <div className="space-y-1">
+                        <label className="text-xs font-medium text-gray-500">Logo Đối Tác (Link ảnh hoặc Tải lên) <span className="text-red-500">*</span></label>
+                        <div className="flex gap-2">
+                          <input required type="text" placeholder="Dán link ảnh hoặc tải lên..." value={editingPartner.logo || ''} onChange={e => setEditingPartner({...editingPartner, logo: e.target.value})} className="flex-1 border border-gray-300 px-3 py-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                          <input type="file" id="partner-logo-upload" accept="image/*" onChange={handlePartnerLogoUpload} className="hidden" />
+                          <label htmlFor="partner-logo-upload" className="cursor-pointer bg-gray-100 hover:bg-gray-200 border border-gray-300 px-3 py-2 text-sm font-medium rounded-lg text-gray-700 flex items-center justify-center whitespace-nowrap">
+                            Tải lên
+                          </label>
+                        </div>
+                     </div>
+
+                     <div className="space-y-1">
+                        <label className="text-xs font-medium text-gray-500">Website Link</label>
+                        <input type="text" placeholder="Ví dụ: https://www.vanlanguni.edu.vn" value={editingPartner.url || ''} onChange={e => setEditingPartner({...editingPartner, url: e.target.value})} className="w-full border border-gray-300 px-3 py-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                     </div>
+
+                     <div className="space-y-1">
+                        <label className="text-xs font-medium text-gray-500">Thứ tự hiển thị</label>
+                        <input type="number" placeholder="Ví dụ: 1" value={editingPartner.order || ''} onChange={e => setEditingPartner({...editingPartner, order: e.target.value})} className="w-full border border-gray-300 px-3 py-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                     </div>
+                  </form>
+                </div>
+
+                <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
+                  <button type="button" onClick={() => setEditingPartner(null)} className="px-5 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">Hủy</button>
+                  <button type="submit" form="partner-form" className="px-5 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg shadow-sm hover:bg-blue-700 transition-colors">Lưu</button>
                 </div>
               </motion.div>
             </div>

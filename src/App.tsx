@@ -250,6 +250,7 @@ interface ThemeContextType {
   showSpotlight?: boolean;
   showBookReview?: boolean;
   showCulture?: boolean;
+  partners_animation?: 'left' | 'right' | 'none';
 }
 
 const ThemeContext = createContext<ThemeContextType>({
@@ -268,7 +269,8 @@ const ThemeContext = createContext<ThemeContextType>({
   customFont: 'Inter',
   showSpotlight: true,
   showBookReview: true,
-  showCulture: true
+  showCulture: true,
+  partners_animation: 'left'
 });
 
 const LanguageContext = createContext<{
@@ -289,9 +291,10 @@ interface DataContextType {
   slides: any[];
   subCategories: any[];
   classifications?: any[];
+  partners?: any[];
 }
 
-const DataContext = createContext<DataContextType>({ events: [], articles: [], gallery: [], books: [], slides: [], subCategories: [], classifications: [] });
+const DataContext = createContext<DataContextType>({ events: [], articles: [], gallery: [], books: [], slides: [], subCategories: [], classifications: [], partners: [] });
 
 // --- Helper Functions ---
 const getCityFromLocation = (location?: string, lang: string = 'vi') => {
@@ -3688,8 +3691,95 @@ const BookReview = () => {
   );
 };
 
+const PartnersSection = () => {
+  const { config, partners_animation = 'left' } = useContext(ThemeContext);
+  const { partners = [] } = useContext(DataContext);
+  const { lang } = useContext(LanguageContext);
+
+  if (partners.length === 0) return null;
+
+  const isLeft = partners_animation === 'left';
+  const isNone = partners_animation === 'none';
+
+  return (
+    <section className="py-16 bg-white border-t border-black/5 overflow-hidden">
+      <style>{`
+        @keyframes marquee-left {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(calc(-10rem * ${partners.length} - 2rem * ${partners.length})); }
+        }
+        @keyframes marquee-right {
+          0% { transform: translateX(calc(-10rem * ${partners.length} - 2rem * ${partners.length})); }
+          100% { transform: translateX(0); }
+        }
+        .animate-marquee-left {
+          animation: marquee-left 25s linear infinite;
+        }
+        .animate-marquee-right {
+          animation: marquee-right 25s linear infinite;
+        }
+        .animate-marquee-left:hover, .animate-marquee-right:hover {
+          animation-play-state: paused;
+        }
+      `}</style>
+      <div className="max-w-7xl mx-auto px-6 mb-10 text-center">
+        <span className={`text-xs font-bold ${config.accentText} uppercase tracking-[0.2em] block mb-2`}>
+          {lang === 'vi' ? 'Đồng hành cùng Sách Nhà Mình' : 'Our Dear Partners'}
+        </span>
+        <h2 className={`text-2xl md:text-3xl font-black ${config.text}`}>
+          {lang === 'vi' ? 'Đối Tác Thân Thiết' : 'Dear Partners'}
+        </h2>
+      </div>
+
+      <div className="relative w-full flex items-center justify-center">
+        {isNone ? (
+          <div className="flex flex-wrap gap-8 justify-center items-center max-w-5xl mx-auto px-6">
+            {partners.map(p => (
+              <a 
+                key={p.id} 
+                href={p.url || '#'} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="w-36 h-16 flex items-center justify-center p-2 rounded-2xl border border-black/5 bg-black/[0.01] hover:bg-black/[0.03] transition-all hover:scale-105 duration-300"
+              >
+                <img 
+                  src={p.logo || ''} 
+                  alt={p.name} 
+                  className="max-w-full max-h-full object-contain filter grayscale hover:grayscale-0 opacity-60 hover:opacity-100 transition-all duration-300"
+                  referrerPolicy="no-referrer"
+                />
+              </a>
+            ))}
+          </div>
+        ) : (
+          <div className="w-full overflow-hidden relative py-4">
+            <div className={`flex gap-8 w-max ${isLeft ? 'animate-marquee-left' : 'animate-marquee-right'}`}>
+              {[...partners, ...partners, ...partners].map((p, idx) => (
+                <a 
+                  key={`${p.id}-${idx}`} 
+                  href={p.url || '#'} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="w-40 h-20 flex items-center justify-center p-4 rounded-2xl border border-black/5 bg-white shadow-sm hover:shadow-md transition-all hover:scale-105 duration-300 flex-shrink-0"
+                >
+                  <img 
+                    src={p.logo || ''} 
+                    alt={p.name} 
+                    className="max-w-full max-h-full object-contain filter grayscale hover:grayscale-0 opacity-60 hover:opacity-100 transition-all duration-300"
+                    referrerPolicy="no-referrer"
+                  />
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+};
+
 const Footer = () => {
-  const { config, siteName, siteLogo, contactAddress, contactPhone, facebookUrl, instagramUrl, showSpotlight, showBookReview, showCulture } = useContext(ThemeContext);
+  const { config, siteName, siteLogo, contactAddress, contactPhone, facebookUrl, instagramUrl, showSpotlight, showBookReview, showCulture, partners_animation } = useContext(ThemeContext);
   const { t, lang } = useContext(LanguageContext);
   const [formData, setFormData] = useState({ name: '', email: '', phone: '', message: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -3930,6 +4020,8 @@ export default function App() {
   const [showSpotlight, setShowSpotlight] = useState(true);
   const [showBookReview, setShowBookReview] = useState(true);
   const [showCulture, setShowCulture] = useState(true);
+  const [partnersAnimation, setPartnersAnimation] = useState<'left' | 'right' | 'none'>('left');
+  const [partners, setPartners] = useState<any[]>([]);
 
   const [inlineActiveSubTab, setInlineActiveSubTab] = useState<'content' | 'articles' | 'images' | 'videos'>('content');
   const [inlineActiveVideoId, setInlineActiveVideoId] = useState<string | null>(null);
@@ -3991,6 +4083,7 @@ export default function App() {
           setShowSpotlight(settingsData.show_spotlight !== false);
           setShowBookReview(settingsData.show_book_review !== false);
           setShowCulture(settingsData.show_culture !== false);
+          setPartnersAnimation(settingsData.partners_animation || 'left');
         }
 
         const regsCountMap: Record<string, number> = {};
@@ -4058,6 +4151,15 @@ export default function App() {
           ];
         }
         setClassifications(fetchedClassifications);
+
+        let partnersData = null;
+        try {
+          const { data } = await supabase.from('partners').select('*').order('order', { ascending: true });
+          partnersData = data;
+        } catch (e) {
+          console.error("Error fetching partners:", e);
+        }
+        if (partnersData) setPartners(partnersData);
       } catch (err) {
         console.error('Lỗi khi tải dữ liệu từ Supabase:', err);
       } finally {
@@ -4107,7 +4209,7 @@ export default function App() {
 
   if (isAdminView) {
     return (
-      <ThemeContext.Provider value={{ theme, setTheme, font, setFont, config: themes[theme], siteName, siteLogo, contactAddress, contactPhone, facebookUrl, instagramUrl, customColor, customFont, showSpotlight, showBookReview, showCulture }}>
+      <ThemeContext.Provider value={{ theme, setTheme, font, setFont, config: themes[theme], siteName, siteLogo, contactAddress, contactPhone, facebookUrl, instagramUrl, customColor, customFont, showSpotlight, showBookReview, showCulture, partners_animation: partnersAnimation }}>
          {(theme === 'custom' || font === 'custom') && <style>{customStyles}</style>}
          <Admin />
       </ThemeContext.Provider>
@@ -4180,10 +4282,10 @@ export default function App() {
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, font, setFont, config, siteName, siteLogo, contactAddress, contactPhone, facebookUrl, instagramUrl, customColor, customFont, showSpotlight, showBookReview, showCulture }}>
+    <ThemeContext.Provider value={{ theme, setTheme, font, setFont, config, siteName, siteLogo, contactAddress, contactPhone, facebookUrl, instagramUrl, customColor, customFont, showSpotlight, showBookReview, showCulture, partners_animation: partnersAnimation }}>
       {(theme === 'custom' || font === 'custom') && <style>{customStyles}</style>}
       <LanguageContext.Provider value={{ lang, setLang, t }}>
-        <DataContext.Provider value={{ events, articles, gallery, books, slides, subCategories, classifications }}>
+        <DataContext.Provider value={{ events, articles, gallery, books, slides, subCategories, classifications, partners }}>
           <div className={`min-h-screen transition-colors duration-1000 ${config.bg} ${config.text} ${fontClass} selection:bg-black selection:text-white`}>
           {isLoading ? (
             <div className="flex flex-col items-center justify-center min-h-[100dvh] w-full">
@@ -5001,6 +5103,7 @@ export default function App() {
                 </motion.div>
               </AnimatePresence>
             )}
+            <PartnersSection />
             <FloatingButtons />
           </main>
           <Footer />
