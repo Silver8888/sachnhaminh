@@ -1398,7 +1398,7 @@ const EventDetailModal = ({ event, isOpen, onClose, onBook }: { event: any, isOp
               </div>
 
               {/* Tab Panels */}
-              <div className="max-h-[520px] overflow-y-auto pr-2 custom-scrollbar">
+              <div className="w-full">
                 {activeSubTab === 'content' && (
                   <div>
                     {(() => {
@@ -4712,7 +4712,7 @@ export default function App() {
                 </div>
 
                 {/* Tab Panels */}
-                <div className="max-h-[520px] overflow-y-auto pr-2 custom-scrollbar">
+                <div className="w-full">
                   {inlineActiveSubTab === 'content' && (
                     <div>
                       {(() => {
