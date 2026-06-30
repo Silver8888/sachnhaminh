@@ -3301,7 +3301,7 @@ const Events = () => {
   const currentDisplayedEvents = displayEvents.slice((currentEventPage - 1) * EVENTS_PER_PAGE, currentEventPage * EVENTS_PER_PAGE);
 
   return (
-    <section id={NAV_SLUGS[2]} className="py-32 px-6 bg-black/[0.01]">
+    <section className="py-32 px-6 bg-black/[0.01]">
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-24 items-start">
           <div className="lg:col-span-8">
@@ -4443,7 +4443,8 @@ export default function App() {
                />
             </div>
 
-            <section className="py-32 px-6 bg-black/[0.01]">
+            
+            <section id={NAV_SLUGS[2]} className="py-32 px-6 bg-black/[0.01]">
 <div className="max-w-7xl mx-auto">
 <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-24 items-start">
 <div className="lg:col-span-8">
