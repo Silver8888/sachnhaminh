@@ -323,6 +323,7 @@ CREATE TABLE IF NOT EXISTS public.site_settings (
     custom_font text,
     show_spotlight boolean DEFAULT true,
     show_book_review boolean DEFAULT true,
+    show_culture boolean DEFAULT true,
     created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
     updated_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
 );
