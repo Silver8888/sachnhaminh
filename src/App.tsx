@@ -1904,6 +1904,15 @@ const CompactCalendar = ({ className = "", onEventClick, onBookClick }: { classN
 
 const Navbar = ({ onBookClick }: { onBookClick?: () => void }) => {
   const { theme, setTheme, font, setFont, config, siteName, siteLogo, showSpotlight, showBookReview, showCulture } = useContext(ThemeContext);
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, slug: string) => {
+    e.preventDefault();
+    setMobileMenuOpen(false);
+    const element = document.getElementById(slug);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      window.history.pushState(null, '', '#' + slug);
+    }
+  };
   const { lang, setLang, t } = useContext(LanguageContext);
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -1940,7 +1949,7 @@ const Navbar = ({ onBookClick }: { onBookClick?: () => void }) => {
               if (slug === 'tieu-diem' && !showSpotlight) return null;
               if (slug === 'diem-sach' && !showBookReview) return null;
               return (
-                <a key={item} href={`#${slug}`} className={`text-sm font-medium ${config.text} hover:opacity-70 transition-opacity`}>
+                <a key={item} href={`#${slug}`} onClick={(e) => handleNavClick(e, slug)} className={`text-sm font-medium ${config.text} hover:opacity-70 transition-opacity`}>
                   {item}
                 </a>
               );
@@ -1990,7 +1999,7 @@ const Navbar = ({ onBookClick }: { onBookClick?: () => void }) => {
                   <a 
                     key={item} 
                     href={`#${slug}`} 
-                    onClick={() => setMobileMenuOpen(false)}
+                    onClick={(e) => handleNavClick(e, slug)}
                     className={`text-3xl font-bold ${config.text} hover:opacity-70`}
                   >
                     {item}
