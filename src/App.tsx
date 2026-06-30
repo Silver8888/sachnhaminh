@@ -3878,25 +3878,6 @@ export default function App() {
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [bookingEventId, setBookingEventId] = useState<number | undefined>(undefined);
   const [expandedEventId, setExpandedEventId] = useState<number | null>(null);
-  const [inlineActiveSubTab, setInlineActiveSubTab] = useState<'articles' | 'images' | 'videos'>('articles');
-  const [inlineActiveVideoId, setInlineActiveVideoId] = useState<string | null>(null);
-  const [inlineActiveImageFolderId, setInlineActiveImageFolderId] = useState<string | null>(null);
-  const [inlineReadingArticle, setInlineReadingArticle] = useState<any | null>(null);
-  const [inlineMediaLightbox, setInlineMediaLightbox] = useState<{ isOpen: boolean, index: number, items: any[] }>({ isOpen: false, index: 0, items: [] });
-
-  // Reset inline states when expanded event changes
-  useEffect(() => {
-    if (expandedEventId) {
-      const currentRelatedArticles = articles.filter(a => String(a.eventId || a.event_id) === String(expandedEventId));
-      if (currentRelatedArticles.length > 0) {
-        setInlineActiveSubTab('articles');
-      } else {
-        setInlineActiveSubTab('images');
-      }
-      setInlineActiveVideoId(null);
-      setInlineActiveImageFolderId(null);
-    }
-  }, [expandedEventId, articles]);
   const [isAdminView, setIsAdminView] = useState(window.location.hash === '#/admin');
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
@@ -3916,6 +3897,26 @@ export default function App() {
   const [classifications, setClassifications] = useState<any[]>([]);
   const [showSpotlight, setShowSpotlight] = useState(true);
   const [showBookReview, setShowBookReview] = useState(true);
+
+  const [inlineActiveSubTab, setInlineActiveSubTab] = useState<'articles' | 'images' | 'videos'>('articles');
+  const [inlineActiveVideoId, setInlineActiveVideoId] = useState<string | null>(null);
+  const [inlineActiveImageFolderId, setInlineActiveImageFolderId] = useState<string | null>(null);
+  const [inlineReadingArticle, setInlineReadingArticle] = useState<any | null>(null);
+  const [inlineMediaLightbox, setInlineMediaLightbox] = useState<{ isOpen: boolean, index: number, items: any[] }>({ isOpen: false, index: 0, items: [] });
+
+  // Reset inline states when expanded event changes
+  useEffect(() => {
+    if (expandedEventId) {
+      const currentRelatedArticles = articles.filter(a => String(a.eventId || a.event_id) === String(expandedEventId));
+      if (currentRelatedArticles.length > 0) {
+        setInlineActiveSubTab('articles');
+      } else {
+        setInlineActiveSubTab('images');
+      }
+      setInlineActiveVideoId(null);
+      setInlineActiveImageFolderId(null);
+    }
+  }, [expandedEventId, articles]);
 
   useEffect(() => {
     const handleHash = () => setIsAdminView(window.location.hash === '#/admin');
