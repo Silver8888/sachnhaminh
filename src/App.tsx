@@ -249,6 +249,7 @@ interface ThemeContextType {
   customFont?: string;
   showSpotlight?: boolean;
   showBookReview?: boolean;
+  showCulture?: boolean;
 }
 
 const ThemeContext = createContext<ThemeContextType>({
@@ -266,7 +267,8 @@ const ThemeContext = createContext<ThemeContextType>({
   customColor: '#8B2B2B',
   customFont: 'Inter',
   showSpotlight: true,
-  showBookReview: true
+  showBookReview: true,
+  showCulture: true
 });
 
 const LanguageContext = createContext<{
@@ -1898,7 +1900,7 @@ const CompactCalendar = ({ className = "", onEventClick, onBookClick }: { classN
 
 
 const Navbar = ({ onBookClick }: { onBookClick?: () => void }) => {
-  const { theme, setTheme, font, setFont, config, siteName, siteLogo, showSpotlight, showBookReview } = useContext(ThemeContext);
+  const { theme, setTheme, font, setFont, config, siteName, siteLogo, showSpotlight, showBookReview, showCulture } = useContext(ThemeContext);
   const { lang, setLang, t } = useContext(LanguageContext);
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -3687,7 +3689,7 @@ const BookReview = () => {
 };
 
 const Footer = () => {
-  const { config, siteName, siteLogo, contactAddress, contactPhone, facebookUrl, instagramUrl, showSpotlight, showBookReview } = useContext(ThemeContext);
+  const { config, siteName, siteLogo, contactAddress, contactPhone, facebookUrl, instagramUrl, showSpotlight, showBookReview, showCulture } = useContext(ThemeContext);
   const { t, lang } = useContext(LanguageContext);
   const [formData, setFormData] = useState({ name: '', email: '', phone: '', message: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -3927,6 +3929,7 @@ export default function App() {
   const [classifications, setClassifications] = useState<any[]>([]);
   const [showSpotlight, setShowSpotlight] = useState(true);
   const [showBookReview, setShowBookReview] = useState(true);
+  const [showCulture, setShowCulture] = useState(true);
 
   const [inlineActiveSubTab, setInlineActiveSubTab] = useState<'content' | 'articles' | 'images' | 'videos'>('content');
   const [inlineActiveVideoId, setInlineActiveVideoId] = useState<string | null>(null);
@@ -3987,6 +3990,7 @@ export default function App() {
           if (settingsData.custom_font) setCustomFont(settingsData.custom_font);
           setShowSpotlight(settingsData.show_spotlight !== false);
           setShowBookReview(settingsData.show_book_review !== false);
+          setShowCulture(settingsData.show_culture !== false);
         }
 
         const regsCountMap: Record<string, number> = {};
@@ -4103,7 +4107,7 @@ export default function App() {
 
   if (isAdminView) {
     return (
-      <ThemeContext.Provider value={{ theme, setTheme, font, setFont, config: themes[theme], siteName, siteLogo, contactAddress, contactPhone, facebookUrl, instagramUrl, customColor, customFont, showSpotlight, showBookReview }}>
+      <ThemeContext.Provider value={{ theme, setTheme, font, setFont, config: themes[theme], siteName, siteLogo, contactAddress, contactPhone, facebookUrl, instagramUrl, customColor, customFont, showSpotlight, showBookReview, showCulture }}>
          {(theme === 'custom' || font === 'custom') && <style>{customStyles}</style>}
          <Admin />
       </ThemeContext.Provider>
@@ -4176,7 +4180,7 @@ export default function App() {
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, font, setFont, config, siteName, siteLogo, contactAddress, contactPhone, facebookUrl, instagramUrl, customColor, customFont, showSpotlight, showBookReview }}>
+    <ThemeContext.Provider value={{ theme, setTheme, font, setFont, config, siteName, siteLogo, contactAddress, contactPhone, facebookUrl, instagramUrl, customColor, customFont, showSpotlight, showBookReview, showCulture }}>
       {(theme === 'custom' || font === 'custom') && <style>{customStyles}</style>}
       <LanguageContext.Provider value={{ lang, setLang, t }}>
         <DataContext.Provider value={{ events, articles, gallery, books, slides, subCategories, classifications }}>
@@ -4981,7 +4985,7 @@ export default function App() {
                 </div>
               </div>
             </section>
-            <CultureChronicles />
+            {showCulture && <CultureChronicles />}
             {/* <Services /> */}
             {showSpotlight && <NewsSection />}
             {showBookReview && (

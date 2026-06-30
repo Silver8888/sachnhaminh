@@ -72,6 +72,7 @@ export const Admin = () => {
   const [instagramUrl, setInstagramUrl] = useState('');
   const [showSpotlight, setShowSpotlight] = useState(true);
   const [showBookReview, setShowBookReview] = useState(true);
+  const [showCulture, setShowCulture] = useState(true);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [isSettingsLoading, setIsSettingsLoading] = useState(true);
@@ -499,6 +500,7 @@ export const Admin = () => {
         if (data.custom_font) setCustomFont(data.custom_font);
         if (data.show_spotlight !== undefined) setShowSpotlight(data.show_spotlight);
         if (data.show_book_review !== undefined) setShowBookReview(data.show_book_review);
+        if (data.show_culture !== undefined) setShowCulture(data.show_culture);
       }
       setIsSettingsLoading(false);
     });
@@ -727,7 +729,8 @@ export const Admin = () => {
         custom_color: customColor,
         custom_font: customFont,
         show_spotlight: showSpotlight,
-        show_book_review: showBookReview
+        show_book_review: showBookReview,
+        show_culture: showCulture
       });
       if (error) throw error;
       alert('Đã lưu cấu hình! Vui lòng tải lại trang (F5) để thấy thay đổi.');
@@ -2811,11 +2814,17 @@ export const Admin = () => {
                             </div>
                          </label>
                          <label className="flex items-center gap-3 cursor-pointer select-none">
-                            <input type="checkbox" checked={showBookReview} onChange={e => setShowBookReview(e.target.checked)} className="w-5 h-5 rounded text-blue-600 focus:ring-blue-500 border-gray-300 cursor-pointer" />
-                            <div>
-                               <span className="text-sm font-medium text-gray-700">Hiện chuyên mục "Điểm sách"</span>
-                            </div>
-                         </label>
+                             <input type="checkbox" checked={showBookReview} onChange={e => setShowBookReview(e.target.checked)} className="w-5 h-5 rounded text-blue-600 focus:ring-blue-500 border-gray-300 cursor-pointer" />
+                             <div>
+                                <span className="text-sm font-medium text-gray-700">Hiện chuyên mục "Điểm sách"</span>
+                             </div>
+                          </label>
+                          <label className="flex items-center gap-3 cursor-pointer select-none">
+                             <input type="checkbox" checked={showCulture} onChange={e => setShowCulture(e.target.checked)} className="w-5 h-5 rounded text-blue-600 focus:ring-blue-500 border-gray-300 cursor-pointer" />
+                             <div>
+                                <span className="text-sm font-medium text-gray-700">Hiện chuyên mục "Theo dòng văn hóa"</span>
+                             </div>
+                          </label>
                       </div>
                    </div>
 
