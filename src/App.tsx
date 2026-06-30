@@ -1476,7 +1476,7 @@ const EventDetailModal = ({ event, isOpen, onClose, onBook }: { event: any, isOp
                           })()}
 
                           {imageFolders.length > 1 && (
-                            <div className="flex gap-2 overflow-x-auto pb-2 pr-2 scrollbar-thin">
+                            <div className="flex flex-col gap-2 max-h-[220px] overflow-y-auto pr-2 custom-scrollbar mt-4 border border-black/[0.03] rounded-2xl p-2 bg-black/[0.01]">
                               {imageFolders.map(item => {
                                 const isActive = activeModalImageFolderId === item.id || (!activeModalImageFolderId && item.id === imageFolders[0].id);
                                 const thumbUrl = item.thumbnail || item.thumbnailUrl || getThumbnailForUrl(item.url || '', 'image') || '';
@@ -1484,9 +1484,13 @@ const EventDetailModal = ({ event, isOpen, onClose, onBook }: { event: any, isOp
                                   <div 
                                     key={item.id} 
                                     onClick={() => setActiveModalImageFolderId(item.id)}
-                                    className={`flex-shrink-0 cursor-pointer p-1 rounded-xl border transition-all ${isActive ? 'border-black bg-black/5' : 'border-transparent hover:bg-black/5'}`}
+                                    className={`flex items-center gap-4 cursor-pointer p-2 rounded-xl border transition-all ${
+                                      isActive 
+                                        ? 'border-black/10 bg-black/[0.03] shadow-sm' 
+                                        : 'border-transparent hover:bg-black/[0.02]'
+                                    }`}
                                   >
-                                    <div className="w-24 aspect-video rounded-lg overflow-hidden relative bg-black/5">
+                                    <div className="w-24 aspect-video rounded-lg overflow-hidden relative bg-black/5 flex-shrink-0">
                                       {thumbUrl !== '' ? (
                                         <img src={thumbUrl} alt="thumb" className="w-full h-full object-cover" />
                                       ) : (
@@ -1495,7 +1499,11 @@ const EventDetailModal = ({ event, isOpen, onClose, onBook }: { event: any, isOp
                                         </div>
                                       )}
                                     </div>
-                                    <span className="text-[10px] font-medium text-gray-700 block text-center mt-1 truncate w-24">{item.title}</span>
+                                    <div className="flex-1 min-w-0 text-left">
+                                      <span className={`text-xs font-semibold block truncate ${isActive ? 'text-blue-600 font-bold' : 'text-gray-700'}`}>
+                                        {item.title || 'Thư mục hình ảnh'}
+                                      </span>
+                                    </div>
                                   </div>
                                 );
                               })}
@@ -1554,7 +1562,7 @@ const EventDetailModal = ({ event, isOpen, onClose, onBook }: { event: any, isOp
                           })()}
 
                           {relatedVideos.length > 1 && (
-                            <div className="flex gap-2 overflow-x-auto pb-2 pr-2 scrollbar-thin">
+                            <div className="flex flex-col gap-2 max-h-[220px] overflow-y-auto pr-2 custom-scrollbar mt-4 border border-black/[0.03] rounded-2xl p-2 bg-black/[0.01]">
                               {relatedVideos.map(item => {
                                 const isActive = activeModalVideoId === item.id || (!activeModalVideoId && item.id === relatedVideos[0].id);
                                 const isFolder = isDriveFolderUrl(item.video_url || item.videoUrl || item.url || '');
@@ -1563,9 +1571,13 @@ const EventDetailModal = ({ event, isOpen, onClose, onBook }: { event: any, isOp
                                   <div 
                                     key={item.id} 
                                     onClick={() => setActiveModalVideoId(item.id)}
-                                    className={`flex-shrink-0 cursor-pointer p-1 rounded-xl border transition-all ${isActive ? 'border-black bg-black/5' : 'border-transparent hover:bg-black/5'}`}
+                                    className={`flex items-center gap-4 cursor-pointer p-2 rounded-xl border transition-all ${
+                                      isActive 
+                                        ? 'border-black/10 bg-black/[0.03] shadow-sm' 
+                                        : 'border-transparent hover:bg-black/[0.02]'
+                                    }`}
                                   >
-                                    <div className="w-24 aspect-video rounded-lg overflow-hidden relative bg-black/5">
+                                    <div className="w-24 aspect-video rounded-lg overflow-hidden relative bg-black/5 flex-shrink-0">
                                       {thumbUrl !== '' ? (
                                         <img src={thumbUrl} alt="thumb" className="w-full h-full object-cover" />
                                       ) : (
@@ -1573,8 +1585,19 @@ const EventDetailModal = ({ event, isOpen, onClose, onBook }: { event: any, isOp
                                           <Play className="w-4 h-4 opacity-40" />
                                         </div>
                                       )}
+                                      {!isFolder && (
+                                        <div className="absolute inset-0 flex items-center justify-center bg-black/10">
+                                          <div className="w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center shadow-lg">
+                                            <Play className="w-3 h-3 fill-current ml-0.5" />
+                                          </div>
+                                        </div>
+                                      )}
                                     </div>
-                                    <span className="text-[10px] font-medium text-gray-700 block text-center mt-1 truncate w-24">{item.title || (isFolder ? 'Thư mục video' : 'Video')}</span>
+                                    <div className="flex-1 min-w-0 text-left">
+                                      <span className={`text-xs font-semibold block truncate ${isActive ? 'text-blue-600 font-bold' : 'text-gray-700'}`}>
+                                        {item.title || (isFolder ? 'Thư mục video' : 'Video')}
+                                      </span>
+                                    </div>
                                   </div>
                                 );
                               })}
@@ -4767,7 +4790,7 @@ export default function App() {
                             })()}
 
                             {imageFolders.length > 1 && (
-                              <div className="flex gap-2 overflow-x-auto pb-2 pr-2 scrollbar-thin">
+                              <div className="flex flex-col gap-2 max-h-[220px] overflow-y-auto pr-2 custom-scrollbar mt-4 border border-black/[0.03] rounded-2xl p-2 bg-black/[0.01]">
                                 {imageFolders.map(item => {
                                   const isActive = inlineActiveImageFolderId === item.id || (!inlineActiveImageFolderId && item.id === imageFolders[0].id);
                                   const thumbUrl = item.thumbnail || item.thumbnailUrl || getThumbnailForUrl(item.url || '', 'image') || '';
@@ -4775,9 +4798,13 @@ export default function App() {
                                     <div 
                                       key={item.id} 
                                       onClick={() => setInlineActiveImageFolderId(item.id)}
-                                      className={`flex-shrink-0 cursor-pointer p-1 rounded-xl border transition-all ${isActive ? 'border-black bg-black/5' : 'border-transparent hover:bg-black/5'}`}
+                                      className={`flex items-center gap-4 cursor-pointer p-2 rounded-xl border transition-all ${
+                                        isActive 
+                                          ? 'border-black/10 bg-black/[0.03] shadow-sm' 
+                                          : 'border-transparent hover:bg-black/[0.02]'
+                                      }`}
                                     >
-                                      <div className="w-24 aspect-video rounded-lg overflow-hidden relative bg-black/5">
+                                      <div className="w-24 aspect-video rounded-lg overflow-hidden relative bg-black/5 flex-shrink-0">
                                         {thumbUrl !== '' ? (
                                           <img src={thumbUrl} alt="thumb" className="w-full h-full object-cover" />
                                         ) : (
@@ -4786,7 +4813,11 @@ export default function App() {
                                           </div>
                                         )}
                                       </div>
-                                      <span className="text-[10px] font-medium text-gray-700 block text-center mt-1 truncate w-24">{item.title}</span>
+                                      <div className="flex-1 min-w-0 text-left">
+                                        <span className={`text-xs font-semibold block truncate ${isActive ? 'text-blue-600 font-bold' : 'text-gray-700'}`}>
+                                          {item.title || 'Thư mục hình ảnh'}
+                                        </span>
+                                      </div>
                                     </div>
                                   );
                                 })}
@@ -4845,32 +4876,47 @@ export default function App() {
                             })()}
 
                             {relatedVideos.length > 1 && (
-                              <div className="flex gap-2 overflow-x-auto pb-2 pr-2 scrollbar-thin">
-                                {relatedVideos.map(item => {
-                                  const isActive = inlineActiveVideoId === item.id || (!inlineActiveVideoId && item.id === relatedVideos[0].id);
-                                  const isFolder = isDriveFolderUrl(item.video_url || item.videoUrl || item.url || '');
-                                  const thumbUrl = item.thumbnail || item.thumbnailUrl || getThumbnailForUrl(item.video_url || item.videoUrl || item.url || '', 'video') || '';
-                                  return (
-                                    <div 
-                                      key={item.id} 
-                                      onClick={() => setInlineActiveVideoId(item.id)}
-                                      className={`flex-shrink-0 cursor-pointer p-1 rounded-xl border transition-all ${isActive ? 'border-black bg-black/5' : 'border-transparent hover:bg-black/5'}`}
-                                    >
-                                      <div className="w-24 aspect-video rounded-lg overflow-hidden relative bg-black/5">
-                                        {thumbUrl !== '' ? (
-                                          <img src={thumbUrl} alt="thumb" className="w-full h-full object-cover" />
-                                        ) : (
-                                          <div className="w-full h-full flex items-center justify-center text-gray-400 bg-gray-100">
-                                            <Play className="w-4 h-4 opacity-40" />
-                                          </div>
-                                        )}
+                                <div className="flex flex-col gap-2 max-h-[220px] overflow-y-auto pr-2 custom-scrollbar mt-4 border border-black/[0.03] rounded-2xl p-2 bg-black/[0.01]">
+                                  {relatedVideos.map(item => {
+                                    const isActive = inlineActiveVideoId === item.id || (!inlineActiveVideoId && item.id === relatedVideos[0].id);
+                                    const isFolder = isDriveFolderUrl(item.video_url || item.videoUrl || item.url || '');
+                                    const thumbUrl = item.thumbnail || item.thumbnailUrl || getThumbnailForUrl(item.video_url || item.videoUrl || item.url || '', 'video') || '';
+                                    return (
+                                      <div 
+                                        key={item.id} 
+                                        onClick={() => setInlineActiveVideoId(item.id)}
+                                        className={`flex items-center gap-4 cursor-pointer p-2 rounded-xl border transition-all ${
+                                          isActive 
+                                            ? 'border-black/10 bg-black/[0.03] shadow-sm' 
+                                            : 'border-transparent hover:bg-black/[0.02]'
+                                        }`}
+                                      >
+                                        <div className="w-24 aspect-video rounded-lg overflow-hidden relative bg-black/5 flex-shrink-0">
+                                          {thumbUrl !== '' ? (
+                                            <img src={thumbUrl} alt="thumb" className="w-full h-full object-cover" />
+                                          ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-gray-400 bg-gray-100">
+                                              <Play className="w-4 h-4 opacity-40" />
+                                            </div>
+                                          )}
+                                          {!isFolder && (
+                                            <div className="absolute inset-0 flex items-center justify-center bg-black/10">
+                                              <div className="w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center shadow-lg">
+                                                <Play className="w-3 h-3 fill-current ml-0.5" />
+                                              </div>
+                                            </div>
+                                          )}
+                                        </div>
+                                        <div className="flex-1 min-w-0 text-left">
+                                          <span className={`text-xs font-semibold block truncate ${isActive ? 'text-blue-600 font-bold' : 'text-gray-700'}`}>
+                                            {item.title || (isFolder ? 'Thư mục video' : 'Video')}
+                                          </span>
+                                        </div>
                                       </div>
-                                      <span className="text-[10px] font-medium text-gray-700 block text-center mt-1 truncate w-24">{item.title || (isFolder ? 'Thư mục video' : 'Video')}</span>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            )}
+                                    );
+                                  })}
+                                </div>
+                              )}
                           </>
                         ) : (
                           <div className="py-12 text-center text-gray-400 flex flex-col items-center">
