@@ -2651,7 +2651,7 @@ const CultureChronicles = () => {
     : [];
 
   return (
-    <section id={NAV_SLUGS[2]} className="py-24 px-6 max-w-7xl mx-auto overflow-hidden border-t border-black/[0.05]">
+    <section id="theo-dong-van-hoa" className="py-24 px-6 max-w-7xl mx-auto overflow-hidden border-t border-black/[0.05]">
       <div className="mb-12 text-center md:text-left">
         {/* Removed CMS Văn Hóa label */}
         <h2 className={`text-4xl md:text-5xl font-black ${config.text} tracking-tight uppercase mb-4`}>
@@ -3292,7 +3292,7 @@ const Events = () => {
   const currentDisplayedEvents = displayEvents.slice((currentEventPage - 1) * EVENTS_PER_PAGE, currentEventPage * EVENTS_PER_PAGE);
 
   return (
-    <section className="py-32 px-6 bg-black/[0.01]">
+    <section id={NAV_SLUGS[2]} className="py-32 px-6 bg-black/[0.01]">
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-24 items-start">
           <div className="lg:col-span-8">
