@@ -2120,7 +2120,7 @@ const Hero = ({ onBookClick, onEventClick, onBookEventClick }: {
                   }
                   return undefined;
                 })()}
-                className={`text-4xl md:text-6xl lg:text-7xl font-bold ${config.text} mb-6 leading-[1.1] tracking-tight drop-shadow-xl prose-headings:m-0 prose-p:m-0`}
+                className={`text-4xl md:text-6xl lg:text-7xl font-bold ${config.text} mb-6 leading-[1.1] tracking-tight drop-shadow-xl [&_p]:m-0 [&_p]:p-0 [&_p]:inline-block [&_p]:w-full [&_p]:leading-inherit [&_p]:font-inherit [&_p]:text-inherit break-normal break-words`}
                 dangerouslySetInnerHTML={{ __html: heading }}
               />
               <p className={`text-lg md:text-xl ${config.text} mb-8 leading-relaxed max-w-lg mx-auto lg:mx-0 opacity-90 drop-shadow-md whitespace-pre-line`}>
