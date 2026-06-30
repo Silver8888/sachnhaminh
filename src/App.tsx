@@ -1213,7 +1213,7 @@ const EventDetailModal = ({ event, isOpen, onClose, onBook }: { event: any, isOp
   const { lang } = useContext(LanguageContext);
   const { subCategories, classifications = [], articles = [], gallery = [] } = useContext(DataContext);
 
-  const [activeSubTab, setActiveSubTab] = useState<'articles' | 'images' | 'videos'>('articles');
+  const [activeSubTab, setActiveSubTab] = useState<'content' | 'articles' | 'images' | 'videos'>('content');
   const [activeModalVideoId, setActiveModalVideoId] = useState<string | null>(null);
   const [activeModalImageFolderId, setActiveModalImageFolderId] = useState<string | null>(null);
   const [readingArticle, setReadingArticle] = useState<any | null>(null);
@@ -1222,12 +1222,7 @@ const EventDetailModal = ({ event, isOpen, onClose, onBook }: { event: any, isOp
   // Auto reset tabs when event changes
   useEffect(() => {
     if (event) {
-      const currentRelatedArticles = articles.filter(a => String(a.eventId || a.event_id) === String(event.id));
-      if (currentRelatedArticles.length > 0) {
-        setActiveSubTab('articles');
-      } else {
-        setActiveSubTab('images');
-      }
+      setActiveSubTab('content');
       setActiveModalVideoId(null);
       setActiveModalImageFolderId(null);
     }
@@ -1358,6 +1353,16 @@ const EventDetailModal = ({ event, isOpen, onClose, onBook }: { event: any, isOp
               
               {/* Sub tabs */}
               <div className="flex gap-2 border-b border-black/[0.05] pb-2 mb-6">
+                <button
+                  onClick={() => setActiveSubTab('content')}
+                  className={`pb-2 px-4 text-sm font-bold uppercase tracking-wider border-b-2 transition-all ${
+                    activeSubTab === 'content' 
+                      ? `border-black text-black` 
+                      : 'border-transparent text-gray-400 hover:text-black'
+                  }`}
+                >
+                  {lang === 'vi' ? 'Nội dung chương trình' : 'Program Content'}
+                </button>
                 {relatedArticles.length > 0 && (
                   <button
                     onClick={() => setActiveSubTab('articles')}
@@ -1394,6 +1399,30 @@ const EventDetailModal = ({ event, isOpen, onClose, onBook }: { event: any, isOp
 
               {/* Tab Panels */}
               <div className="max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
+                {activeSubTab === 'content' && (
+                  <div>
+                    {(() => {
+                      const contentVal = lang === 'vi' ? event.content_vi : event.content_en;
+                      const descVal = lang === 'vi' ? event.desc_vi : event.desc_en;
+                      if (contentVal) {
+                        return (
+                          <div className="ql-snow">
+                            <div 
+                              className="ql-editor p-0 opacity-90 leading-relaxed max-w-none text-base"
+                              dangerouslySetInnerHTML={{ __html: cleanHtmlContent(contentVal) }} 
+                            />
+                          </div>
+                        );
+                      }
+                      return (
+                        <p className={`${config.text} opacity-90 leading-relaxed text-base whitespace-pre-line`}>
+                          {descVal}
+                        </p>
+                      );
+                    })()}
+                  </div>
+                )}
+
                 {activeSubTab === 'articles' && (
                   <div className="space-y-4">
                     {relatedArticles.length > 0 ? (
@@ -1564,29 +1593,7 @@ const EventDetailModal = ({ event, isOpen, onClose, onBook }: { event: any, isOp
               </div>
             </div>
 
-            {(() => {
-             const content = lang === 'vi' ? event.content_vi : event.content_en;
-             const desc = lang === 'vi' ? event.desc_vi : event.desc_en;
-             return (
-               <div className="mb-10">
-                 <label className="text-[10px] font-bold uppercase tracking-widest opacity-30 mb-4 block">{lang === 'vi' ? 'Nội dung chương trình' : 'Program Content'}</label>
-                 {content ? (
-                   <div className="ql-snow">
-                     <div 
-                       className="ql-editor p-0 opacity-90 leading-relaxed max-w-none text-base"
-                       dangerouslySetInnerHTML={{ __html: cleanHtmlContent(content) }} 
-                     />
-                   </div>
-                 ) : (
-                   <p className={`${config.text} opacity-90 leading-relaxed text-base`}>
-                     {desc}
-                   </p>
-                 )}
-               </div>
-             );
-           })()}
-
-           <button onClick={handleBookClick} className={`w-full ${config.accent} text-white py-5 rounded-3xl font-bold hover:brightness-110 transition-all shadow-xl`}>
+            <button onClick={handleBookClick} className={`w-full ${config.accent} text-white py-5 rounded-3xl font-bold hover:brightness-110 transition-all shadow-xl`}>
              {lang === 'vi' ? 'Đăng Ký Tham Gia' : 'Register Now'}
            </button>
         </div>
@@ -3898,7 +3905,7 @@ export default function App() {
   const [showSpotlight, setShowSpotlight] = useState(true);
   const [showBookReview, setShowBookReview] = useState(true);
 
-  const [inlineActiveSubTab, setInlineActiveSubTab] = useState<'articles' | 'images' | 'videos'>('articles');
+  const [inlineActiveSubTab, setInlineActiveSubTab] = useState<'content' | 'articles' | 'images' | 'videos'>('content');
   const [inlineActiveVideoId, setInlineActiveVideoId] = useState<string | null>(null);
   const [inlineActiveImageFolderId, setInlineActiveImageFolderId] = useState<string | null>(null);
   const [inlineReadingArticle, setInlineReadingArticle] = useState<any | null>(null);
@@ -3907,16 +3914,11 @@ export default function App() {
   // Reset inline states when expanded event changes
   useEffect(() => {
     if (expandedEventId) {
-      const currentRelatedArticles = articles.filter(a => String(a.eventId || a.event_id) === String(expandedEventId));
-      if (currentRelatedArticles.length > 0) {
-        setInlineActiveSubTab('articles');
-      } else {
-        setInlineActiveSubTab('images');
-      }
+      setInlineActiveSubTab('content');
       setInlineActiveVideoId(null);
       setInlineActiveImageFolderId(null);
     }
-  }, [expandedEventId, articles]);
+  }, [expandedEventId]);
 
   useEffect(() => {
     const handleHash = () => setIsAdminView(window.location.hash === '#/admin');
@@ -4642,6 +4644,16 @@ export default function App() {
                 
                 {/* Sub tabs */}
                 <div className="flex gap-2 border-b border-black/[0.05] pb-2 mb-6">
+                  <button
+                    onClick={() => setInlineActiveSubTab('content')}
+                    className={`pb-2 px-4 text-sm font-bold uppercase tracking-wider border-b-2 transition-all ${
+                      inlineActiveSubTab === 'content' 
+                        ? `border-black text-black` 
+                        : 'border-transparent text-gray-400 hover:text-black'
+                    }`}
+                  >
+                    {lang === 'vi' ? 'Nội dung chương trình' : 'Program Content'}
+                  </button>
                   {relatedArticles.length > 0 && (
                     <button
                       onClick={() => setInlineActiveSubTab('articles')}
@@ -4678,6 +4690,30 @@ export default function App() {
 
                 {/* Tab Panels */}
                 <div className="max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
+                  {inlineActiveSubTab === 'content' && (
+                    <div>
+                      {(() => {
+                        const contentVal = lang === 'vi' ? event.content_vi : event.content_en;
+                        const descVal = lang === 'vi' ? event.desc_vi : event.desc_en;
+                        if (contentVal) {
+                          return (
+                            <div className="ql-snow">
+                              <div 
+                                className="ql-editor p-0 opacity-85 leading-relaxed max-w-none text-base"
+                                dangerouslySetInnerHTML={{ __html: cleanHtmlContent(contentVal) }} 
+                              />
+                            </div>
+                          );
+                        }
+                        return (
+                          <p className={`${config.text} text-base leading-relaxed opacity-85 whitespace-pre-line`}>
+                            {descVal}
+                          </p>
+                        );
+                      })()}
+                    </div>
+                  )}
+
                   {inlineActiveSubTab === 'articles' && (
                     <div className="space-y-4">
                       {relatedArticles.length > 0 ? (
@@ -4849,31 +4885,7 @@ export default function App() {
               </div>
             )}
 
-              <div>
-                <label className="text-[10px] font-bold uppercase tracking-widest opacity-30 mb-4 block">{lang === 'vi' ? 'Nội dung chương trình' : 'Program Content'}</label>
-                {(() => {
-                  const content = lang === 'vi' ? event.content_vi : event.content_en;
-                  const desc = lang === 'vi' ? event.desc_vi : event.desc_en;
-                  if (content) {
-                    return (
-                      <div className="ql-snow">
-                        <div 
-                          className="ql-editor p-0 opacity-80 leading-relaxed max-w-none text-base"
-                          dangerouslySetInnerHTML={{ __html: cleanHtmlContent(content) }} 
-                        />
-                      </div>
-                    );
-                  }
-                  return (
-                    <p className={`${config.text} text-base leading-relaxed opacity-80 whitespace-pre-line`}>
-                      {desc}
-                    </p>
-                  );
-                })()}
-              </div>
-            </div>
-            
-            <div className="flex flex-col gap-4 w-full mt-12">
+              </div><div className="flex flex-col gap-4 w-full mt-12">
               {event._status !== 'past' && (
                 <button 
                   onClick={() => handleOpenBooking(event.id)}
