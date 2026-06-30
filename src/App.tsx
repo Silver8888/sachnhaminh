@@ -1263,7 +1263,7 @@ const EventDetailModal = ({ event, isOpen, onClose, onBook }: { event: any, isOp
       
       <motion.div 
         initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
-        className={`${config.card} w-full max-w-4xl max-h-[90vh] rounded-[48px] overflow-hidden relative flex flex-col`}
+        className={`${config.card} w-full max-w-6xl max-h-[90vh] rounded-[48px] overflow-hidden relative flex flex-col`}
       >
         <button onClick={onClose} className={`absolute top-6 right-6 z-10 p-2 bg-black/5 hover:bg-black/10 backdrop-blur-md rounded-full ${config.text} transition-all`}>
           <X className="w-6 h-6" />
@@ -1398,7 +1398,7 @@ const EventDetailModal = ({ event, isOpen, onClose, onBook }: { event: any, isOp
               </div>
 
               {/* Tab Panels */}
-              <div className="max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
+              <div className="max-h-[520px] overflow-y-auto pr-2 custom-scrollbar">
                 {activeSubTab === 'content' && (
                   <div>
                     {(() => {
@@ -4712,7 +4712,7 @@ export default function App() {
                 </div>
 
                 {/* Tab Panels */}
-                <div className="max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
+                <div className="max-h-[520px] overflow-y-auto pr-2 custom-scrollbar">
                   {inlineActiveSubTab === 'content' && (
                     <div>
                       {(() => {
