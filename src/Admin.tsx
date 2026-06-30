@@ -77,6 +77,8 @@ export const Admin = () => {
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [isSettingsLoading, setIsSettingsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'articles' | 'gallery' | 'events' | 'books' | 'roles' | 'slides' | 'contacts' | 'settings' | 'categories' | 'articleCategories' | 'checkin' | 'crm'>('dashboard');
+  const [galleryFilterType, setGalleryFilterType] = useState<'all' | 'image' | 'video'>('all');
+  const [galleryFilterEventId, setGalleryFilterEventId] = useState<string>('all');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const [crmSearch, setCrmSearch] = useState('');
@@ -1880,45 +1882,121 @@ export const Admin = () => {
           )}
 
           {activeTab === 'gallery' && (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-              {gallery.map(item => (
-                <div key={item.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden group shadow-sm flex flex-col">
-                  <div className="relative aspect-video bg-gray-100 flex items-center justify-center">
-                     {item.type === 'video' ? (
-                        <>
-                           <iframe src={parseDriveUrl(item.video_url, 'video')} className="w-full h-full object-cover opacity-60" />
-                           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                              <div className="w-12 h-12 bg-white/90 rounded-full flex items-center justify-center shadow-lg">
-                                 <Play className="w-5 h-5 text-blue-600 ml-1" />
-                              </div>
-                           </div>
-                        </>
-                     ) : (
-                        <img src={parseDriveUrl(item.thumbnail || item.url, 'image')} alt={item.title} className="w-full h-full object-cover" />
-                     )}
-                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
-                      <button onClick={() => setEditingGallery({ ...item, eventId: item.event_id })} className="p-2 bg-white text-gray-800 rounded-full hover:bg-blue-50 transition-colors shadow-lg">
-                        <Edit3 className="w-4 h-4" />
-                      </button>
-                      <button onClick={() => deleteGallery(item.id)} className="p-2 bg-white text-red-600 rounded-full hover:bg-red-50 transition-colors shadow-lg">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                  <div className="p-3">
-                    <p className="font-medium text-sm text-gray-900 truncate mb-1" title={item.title}>{item.title || 'Untitled'}</p>
-                    <div className="flex justify-between items-center text-xs text-gray-500">
-                       <span className="uppercase text-[10px] font-bold tracking-wider">{item.type}</span>
-                    </div>
-                  </div>
+            <div className="space-y-6 w-full text-left">
+              {/* Filter controls */}
+              <div className="flex flex-col sm:flex-row gap-4 bg-white p-4 rounded-xl border border-gray-200 shadow-sm w-full">
+                {/* Filter by Event */}
+                <div className="flex-1">
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                    {adminLang === 'vi' ? 'Lọc theo Sự kiện' : 'Filter by Event'}
+                  </label>
+                  <select
+                    value={galleryFilterEventId}
+                    onChange={(e) => setGalleryFilterEventId(e.target.value)}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs font-medium outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer"
+                  >
+                    <option value="all">
+                      {adminLang === 'vi' ? 'Tất cả sự kiện' : 'All Events'}
+                    </option>
+                    {events.map((ev) => (
+                      <option key={ev.id} value={String(ev.id)}>
+                        {adminLang === 'vi' ? ev.title_vi : ev.title_en || ev.title_vi}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-              ))}
-              {gallery.length === 0 && (
-                <div className="col-span-full py-16 text-center text-gray-500 flex flex-col items-center bg-white border border-gray-200 rounded-xl">
-                  <ImageIcon className="w-12 h-12 text-gray-200 mb-3" />
-                  <p>{t.noGallery}</p>
+
+                {/* Filter by Media Type */}
+                <div className="w-full sm:w-48">
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                    {adminLang === 'vi' ? 'Lọc theo Định dạng' : 'Filter by Type'}
+                  </label>
+                  <select
+                    value={galleryFilterType}
+                    onChange={(e) => setGalleryFilterType(e.target.value as any)}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs font-medium outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer"
+                  >
+                    <option value="all">
+                      {adminLang === 'vi' ? 'Tất cả định dạng' : 'All Types'}
+                    </option>
+                    <option value="image">
+                      {adminLang === 'vi' ? 'Hình ảnh' : 'Image'}
+                    </option>
+                    <option value="video">
+                      {adminLang === 'vi' ? 'Video' : 'Video'}
+                    </option>
+                  </select>
                 </div>
-              )}
+              </div>
+
+              {/* Grid content */}
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                {(() => {
+                  const filteredGallery = gallery.filter((item) => {
+                    const matchType = galleryFilterType === 'all' || item.type === galleryFilterType;
+                    const matchEvent = galleryFilterEventId === 'all' || String(item.event_id || item.eventId) === galleryFilterEventId;
+                    return matchType && matchEvent;
+                  });
+
+                  if (filteredGallery.length === 0) {
+                    return (
+                      <div className="col-span-full py-16 text-center text-gray-500 flex flex-col items-center bg-white border border-gray-200 rounded-xl">
+                        <ImageIcon className="w-12 h-12 text-gray-200 mb-3" />
+                        <p>
+                          {adminLang === 'vi' 
+                            ? 'Không tìm thấy hình ảnh/video nào khớp với bộ lọc.' 
+                            : 'No media found matching the filter.'}
+                        </p>
+                      </div>
+                    );
+                  }
+
+                  return filteredGallery.map((item) => {
+                    const matchedEvent = events.find(e => String(e.id) === String(item.event_id || item.eventId));
+                    const eventTitle = matchedEvent 
+                      ? (adminLang === 'vi' ? matchedEvent.title_vi : matchedEvent.title_en || matchedEvent.title_vi)
+                      : (adminLang === 'vi' ? 'Không thuộc sự kiện' : 'No event');
+
+                    return (
+                      <div key={item.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden group shadow-sm flex flex-col">
+                        <div className="relative aspect-video bg-gray-100 flex items-center justify-center">
+                           {item.type === 'video' ? (
+                              <>
+                                 <iframe src={parseDriveUrl(item.video_url, 'video')} className="w-full h-full object-cover opacity-60" />
+                                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                    <div className="w-12 h-12 bg-white/90 rounded-full flex items-center justify-center shadow-lg">
+                                       <Play className="w-5 h-5 text-blue-600 ml-1" />
+                                    </div>
+                                 </div>
+                              </>
+                           ) : (
+                              <img src={parseDriveUrl(item.thumbnail || item.url, 'image')} alt={item.title} className="w-full h-full object-cover" />
+                           )}
+                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                            <button onClick={() => setEditingGallery({ ...item, eventId: item.event_id })} className="p-2 bg-white text-gray-800 rounded-full hover:bg-blue-50 transition-colors shadow-lg">
+                              <Edit3 className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => deleteGallery(item.id)} className="p-2 bg-white text-red-600 rounded-full hover:bg-red-50 transition-colors shadow-lg">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="p-3 text-left">
+                          <p className="font-medium text-sm text-gray-900 truncate mb-1" title={item.title}>{item.title || 'Untitled'}</p>
+                          <div className="flex flex-col gap-1 text-[10px] text-gray-500">
+                             <div className="flex justify-between items-center">
+                                <span className="uppercase font-bold tracking-wider">{item.type}</span>
+                             </div>
+                             <span className="truncate block text-gray-400 font-medium" title={eventTitle}>
+                               📌 {eventTitle}
+                             </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
             </div>
           )}
           
