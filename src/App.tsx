@@ -2418,7 +2418,7 @@ const ArticleDetailPage = ({
 }) => {
   const { config } = useContext(ThemeContext);
   const { lang, t } = useContext(LanguageContext);
-  const { classifications = [], events = [] } = useContext(DataContext);
+  const { classifications = [], events = [], articles = [] } = useContext(DataContext);
 
   const [catPart = '', eventPart = ''] = (article.category || '').split('|');
   const categories = catPart.split(',').filter(Boolean);
