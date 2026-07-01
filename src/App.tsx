@@ -2407,6 +2407,158 @@ const Services = () => {
   );
 };
 
+const EventDetailPage = ({ 
+  event, 
+  onBack,
+  onBookEventClick
+}: { 
+  event: any, 
+  onBack: () => void,
+  onBookEventClick?: (ev: any) => void
+}) => {
+  const { config } = useContext(ThemeContext);
+  const { lang, t } = useContext(LanguageContext);
+  const { classifications = [], articles = [], gallery = [] } = useContext(DataContext);
+
+  const [activeSubTab, setActiveSubTab] = useState<'content' | 'articles' | 'images' | 'videos'>('content');
+  const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
+  const [activeImageFolderId, setActiveImageFolderId] = useState<string | null>(null);
+  const [mediaLightbox, setMediaLightbox] = useState<{ isOpen: boolean, index: number, items: any[] }>({ isOpen: false, index: 0, items: [] });
+  const [readingArticle, setReadingArticle] = useState<any | null>(null);
+
+  const relatedArticles = articles.filter(a => 
+    String(a.event_id || a.eventId) === String(event.id) || (a.category && a.category.split('|')[1]?.split(',').includes(String(event.id)))
+  );
+
+  const handleCategoryClick = (clId: string) => {
+    onBack();
+    setTimeout(() => {
+      const element = document.getElementById(NAV_SLUGS[1]);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 100);
+  };
+
+  return (
+    <div className="bg-gray-50/50 min-h-screen pt-28 pb-16">
+      <div className="max-w-7xl mx-auto px-6 mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <button 
+          onClick={onBack}
+          className="inline-flex items-center gap-2 text-sm font-bold text-gray-600 hover:text-blue-600 transition-colors bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-100 self-start"
+        >
+          ← {lang === 'vi' ? 'Quay lại trang chủ' : 'Back to Home'}
+        </button>
+
+        {/* Classification categories tabs */}
+        <div className="flex flex-wrap gap-1.5 bg-black/5 p-1.5 rounded-2xl self-start md:self-auto">
+          {classifications.map((cl) => {
+            const isSelected = String(event.category || 'sachnhaminh') === String(cl.id);
+            return (
+              <button
+                key={cl.id}
+                onClick={() => handleCategoryClick(cl.id)}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                  isSelected 
+                    ? `${config.accent} text-white shadow-md` 
+                    : `text-gray-500 hover:text-gray-900 hover:bg-black/5`
+                }`}
+              >
+                {lang === 'vi' ? cl.name_vi : cl.name_en}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* Main Column: Event content (Col-span-9) */}
+          <div className="lg:col-span-9 bg-white p-8 md:p-12 rounded-3xl border border-gray-100 shadow-sm space-y-6 text-left">
+            {event.image && (
+              <div className="aspect-[21/9] rounded-2xl overflow-hidden border border-black/5 shadow-sm">
+                <img src={event.image} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <div className="flex flex-wrap gap-2 text-xs text-gray-500 font-semibold">
+                <span className="flex items-center gap-1">📅 {event.date}</span>
+                {event.time && <span className="flex items-center gap-1">⏰ {event.time} {event.end_time ? `- ${event.end_time}` : ''}</span>}
+                {event.location && <span className="flex items-center gap-1">📍 {event.location}</span>}
+              </div>
+
+              <h1 className={`text-2xl md:text-4xl font-black ${config.text} leading-tight`}>
+                {lang === 'vi' ? event.title_vi : event.title_en || event.title_vi}
+              </h1>
+            </div>
+
+            {event.description_vi && (
+              <p className="text-sm font-semibold text-gray-600 leading-relaxed border-l-4 border-black/20 pl-4 py-1 italic bg-black/[0.01]">
+                {lang === 'vi' ? event.description_vi : event.description_en || event.description_vi}
+              </p>
+            )}
+
+            <div 
+              className="prose prose-lg max-w-none text-gray-800 leading-relaxed ql-snow"
+              dangerouslySetInnerHTML={{ __html: cleanHtmlContent(lang === 'vi' ? event.content_vi : event.content_en || event.content_vi) }}
+            />
+
+            {/* Booking Call to Action */}
+            <div className="border-t border-gray-100 pt-8 mt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="text-left">
+                <h4 className="font-bold text-sm text-gray-900">{lang === 'vi' ? 'Đặt chỗ tham gia sự kiện' : 'Book event ticket'}</h4>
+                <p className="text-xs text-gray-500">{lang === 'vi' ? 'Hãy đăng ký giữ chỗ ngay hôm nay' : 'Reserve your spot today'}</p>
+              </div>
+              <button 
+                onClick={() => onBookEventClick?.(event)}
+                className={`px-8 py-3.5 rounded-full font-bold text-white shadow-lg transition-all hover:brightness-110 ${config.accent}`}
+              >
+                {lang === 'vi' ? 'Đặt chỗ ngay' : 'Book Now'}
+              </button>
+            </div>
+          </div>
+
+          {/* Right Column: Related Articles (Col-span-3) */}
+          <div className="lg:col-span-3 bg-white p-6 rounded-3xl border border-gray-100 shadow-sm space-y-6 text-left">
+            <div className="space-y-4">
+              <h3 className={`text-sm font-black uppercase tracking-wider ${config.accentText} border-b pb-2`}>
+                📰 {lang === 'vi' ? 'Bài viết liên quan' : 'Related Articles'}
+              </h3>
+              <div className="space-y-3">
+                {relatedArticles.map(art => (
+                  <div
+                    key={art.id}
+                    onClick={() => {
+                      window.location.hash = '#/news/' + art.id;
+                    }}
+                    className="group cursor-pointer p-3 rounded-2xl bg-gray-50 border border-gray-100 hover:border-blue-100 hover:bg-blue-50/20 transition-all duration-300 flex flex-col gap-2"
+                  >
+                    {art.image && (
+                      <div className="aspect-[16/10] rounded-xl overflow-hidden bg-gray-200">
+                        <img src={art.image} alt="" className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500" referrerPolicy="no-referrer" />
+                      </div>
+                    )}
+                    <div>
+                      <span className="text-[9px] text-gray-400 block mb-0.5">{art.date}</span>
+                      <h4 className={`font-bold text-xs ${config.text} group-hover:text-blue-600 transition-colors line-clamp-2 leading-snug`}>
+                        {lang === 'vi' ? art.title_vi : art.title_en || art.title_vi}
+                      </h4>
+                    </div>
+                  </div>
+                ))}
+                {relatedArticles.length === 0 && (
+                  <p className="text-xs text-gray-400 italic text-center py-4">{lang === 'vi' ? 'Không có bài viết nào.' : 'No related articles.'}</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const ArticleDetailPage = ({ 
   article, 
   onBack, 
@@ -2568,7 +2720,7 @@ const ArticleDetailPage = ({
               {associatedEvents.map(ev => (
                 <div
                   key={ev.id}
-                  onClick={() => onEventClick?.(ev)}
+                  onClick={() => { window.location.hash = '#/event/' + (ev).id; }}
                   className="group cursor-pointer p-3.5 rounded-2xl bg-gray-50 border border-gray-100 hover:border-blue-100 hover:bg-blue-50/20 transition-all duration-300 flex flex-col gap-2"
                 >
                   {ev.image && (
@@ -2741,7 +2893,7 @@ const NewsSection = ({ onEventClick }: { onEventClick?: (event: any) => void }) 
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: idx * 0.05 }}
-                  onClick={() => onEventClick?.(ev)}
+                  onClick={() => { window.location.hash = '#/event/' + (ev).id; }}
                   className={`group cursor-pointer p-4 rounded-2xl ${config.card} border ${config.border} shadow-sm hover:shadow-md transition-all duration-300 flex gap-4 items-center text-left`}
                 >
                   <div className="w-16 h-16 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
@@ -4335,27 +4487,40 @@ export default function App() {
   }, [expandedEventId]);
 
   const [selectedArticle, setSelectedArticle] = useState<any | null>(null);
+  const [selectedEventPage, setSelectedEventPage] = useState<any | null>(null);
 
   useEffect(() => {
     const handleHash = () => {
       setIsAdminView(window.location.hash === '#/admin');
       
       const newsMatch = window.location.hash.match(/^#\/news\/(.+)$/);
+      const eventMatch = window.location.hash.match(/^#\/event\/(.+)$/);
+      
       if (newsMatch) {
         const artId = newsMatch[1];
         const found = articles.find((a: any) => String(a.id) === String(artId));
         if (found) {
           setSelectedArticle(found);
+          setSelectedEventPage(null);
+          window.scrollTo(0, 0);
+        }
+      } else if (eventMatch) {
+        const evId = eventMatch[1];
+        const found = events.find((e: any) => String(e.id) === String(evId));
+        if (found) {
+          setSelectedEventPage(found);
+          setSelectedArticle(null);
           window.scrollTo(0, 0);
         }
       } else {
         setSelectedArticle(null);
+        setSelectedEventPage(null);
       }
     };
     window.addEventListener('hashchange', handleHash);
     handleHash();
     return () => window.removeEventListener('hashchange', handleHash);
-  }, [articles]);
+  }, [articles, events]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -4749,10 +4914,18 @@ export default function App() {
                 }} 
                 onEventClick={setSelectedEvent}
               />
+            ) : selectedEventPage ? (
+              <EventDetailPage
+                event={selectedEventPage}
+                onBack={() => {
+                  window.location.hash = '#/';
+                  setSelectedEventPage(null);
+                }}
+                onBookEventClick={(ev) => handleOpenBooking(ev.id)}
+              />
             ) : (
               <>
-
-            <Hero 
+<Hero 
               onBookClick={() => handleOpenBooking()} 
               onEventClick={setSelectedEvent}
               onBookEventClick={(e) => handleOpenBooking(e.id)}
@@ -5438,7 +5611,6 @@ export default function App() {
             )}
             <PartnersSection />
             <FloatingButtons />
-          
               </>
             )}
           </main>
