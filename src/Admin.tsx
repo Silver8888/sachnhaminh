@@ -24,11 +24,12 @@ Quill.register(Size, true);
 const quillImageHandler = function(this: any) {
   const url = prompt("Vui lòng nhập đường dẫn (URL) hình ảnh:");
   if (url) {
+    const directUrl = parseDriveUrl(url, 'image');
     const range = this.quill.getSelection();
     if (range) {
-      this.quill.insertEmbed(range.index, 'image', url);
+      this.quill.insertEmbed(range.index, 'image', directUrl);
     } else {
-      this.quill.insertEmbed(0, 'image', url);
+      this.quill.insertEmbed(0, 'image', directUrl);
     }
   }
 };
