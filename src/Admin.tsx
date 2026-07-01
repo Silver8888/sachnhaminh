@@ -1971,17 +1971,28 @@ const saveSubCategory = async (e: React.FormEvent) => {
                       <div className="col-span-2 text-sm text-gray-600 capitalize">
                          <span className="inline-flex flex-wrap gap-1 items-center">
                             {(() => {
-                              const [catPart = ''] = (article.category || '').split('|');
-                              const catIds = catPart.split(',').filter(Boolean);
-                              if (catIds.length === 0) return <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-50 text-gray-500 border border-gray-100">Không có</span>;
-                              return catIds.map(catId => {
-                                const match = classifications.find(c => c.id === catId);
-                                return (
-                                  <span key={catId} className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
-                                    {match ? match.name_vi : catId}
-                                  </span>
-                                );
-                              });
+                              const [catPart = '', eventPart = '', subCatPart = ''] = (article.category || '').split('|');
+                               const catIds = catPart.split(',').filter(Boolean);
+                               const subCatIds = subCatPart.split(',').filter(Boolean);
+                              const badges = [];
+                               catIds.forEach(catId => {
+                                 const match = classifications.find(c => c.id === catId);
+                                 badges.push(
+                                   <span key={'cat-' + catId} className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
+                                     {match ? match.name_vi : catId}
+                                   </span>
+                                 );
+                               });
+                               subCatIds.forEach(scId => {
+                                 const match = subCategories.find(c => String(c.id) === String(scId));
+                                 badges.push(
+                                   <span key={'sub-' + scId} className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-100">
+                                     {match ? match.name_vi : scId}
+                                   </span>
+                                 );
+                               });
+                               if (badges.length === 0) return <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-50 text-gray-500 border border-gray-100">Không có</span>;
+                               return badges;
                             })()}
                          </span>
                       </div>
@@ -3282,11 +3293,12 @@ const saveSubCategory = async (e: React.FormEvent) => {
                      {/* Basic Settings */}
                      <div>
                         <h3 className="text-sm font-semibold text-gray-900 border-b pb-2 mb-4">Basic Details</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                           {(() => {
-                              const [catPart = '', eventPart = ''] = (editingArticle.category || '').split('|');
-                              const selectedCategories = catPart.split(',').filter(Boolean);
-                              const selectedEventIds = eventPart.split(',').filter(Boolean);
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            {(() => {
+                               const [catPart = '', eventPart = '', subCatPart = ''] = (editingArticle.category || '').split('|');
+                               const selectedCategories = catPart.split(',').filter(Boolean);
+                               const selectedEventIds = eventPart.split(',').filter(Boolean);
+                               const selectedSubCatIds = subCatPart.split(',').filter(Boolean);
                               
                               return (
                                  <>
@@ -3307,7 +3319,7 @@ const saveSubCategory = async (e: React.FormEvent) => {
                                                          } else {
                                                             newCats = selectedCategories.filter(id => id !== cl.id);
                                                          }
-                                                         const newCategoryField = `${newCats.join(',')}|${selectedEventIds.join(',')}`;
+                                                         const newCategoryField = `${newCats.join(',')}|${selectedEventIds.join(',')}|${selectedSubCatIds.join(',')}`;
                                                          setEditingArticle({ ...editingArticle, category: newCategoryField });
                                                       }}
                                                       className="rounded text-blue-600 focus:ring-blue-500"
@@ -3319,7 +3331,36 @@ const saveSubCategory = async (e: React.FormEvent) => {
                                        </div>
                                     </div>
                                     <div className="space-y-1">
-                                       <label className="text-xs font-medium text-gray-500">Date (Display)</label>
+                                        <label className="text-xs font-medium text-gray-500">Danh mục sự kiện (Chọn nhiều)</label>
+                                        <div className="flex flex-col gap-1.5 p-3 bg-gray-50 rounded-lg border border-gray-300 max-h-36 overflow-y-auto">
+                                           {subCategories.map(sc => {
+                                              const isChecked = selectedSubCatIds.includes(String(sc.id));
+                                              return (
+                                                 <label key={sc.id} className="flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-md border border-gray-200 shadow-sm cursor-pointer hover:bg-gray-50 text-xs">
+                                                    <input
+                                                       type="checkbox"
+                                                       checked={isChecked}
+                                                       onChange={(e) => {
+                                                          let newSubCats;
+                                                          if (e.target.checked) {
+                                                             newSubCats = [...selectedSubCatIds, String(sc.id)];
+                                                          } else {
+                                                             newSubCats = selectedSubCatIds.filter(id => id !== String(sc.id));
+                                                          }
+                                                          const newCategoryField = `${selectedCategories.join(',')}|${selectedEventIds.join(',')}|${newSubCats.join(',')}`;
+                                                          setEditingArticle({ ...editingArticle, category: newCategoryField });
+                                                       }}
+                                                       className="rounded text-blue-600 focus:ring-blue-500"
+                                                    />
+                                                    <span>{sc.name_vi}</span>
+                                                 </label>
+                                              );
+                                           })}
+                                        </div>
+                                     </div>
+
+                                     <div className="space-y-1">
+                                        <label className="text-xs font-medium text-gray-500">Date (Display)</label>
                                        <div className="relative">
                                           <Calendar className="w-4 h-4 absolute left-3 top-2.5 text-gray-400" />
                                           <input placeholder="e.g. 15/05/2026" value={editingArticle.date || ''} onChange={e => setEditingArticle({...editingArticle, date: e.target.value})} className="w-full border border-gray-300 pl-9 pr-3 py-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
@@ -3342,7 +3383,7 @@ const saveSubCategory = async (e: React.FormEvent) => {
                                                          } else {
                                                             newEvents = selectedEventIds.filter(id => id !== ev.id);
                                                          }
-                                                         const newCategoryField = `${selectedCategories.join(',')}|${newEvents.join(',')}`;
+                                                         const newCategoryField = `${selectedCategories.join(',')}|${newEvents.join(',')}|${selectedSubCatIds.join(',')}`;
                                                          setEditingArticle({ 
                                                             ...editingArticle, 
                                                             category: newCategoryField,
