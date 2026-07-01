@@ -3320,16 +3320,16 @@ const NewsSection = ({ onEventClick }: { onEventClick?: (event: any) => void }) 
         </div>
 
         {/* Classification categories tabs */}
-        <div className="mb-4 flex flex-wrap justify-center lg:justify-start items-center gap-2 border-b border-black/5 pb-4">
-          <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest mr-2">
-            {lang === 'vi' ? 'Phân loại sự kiện:' : 'Event Classification:'}
+        <div className="mb-4 flex flex-wrap justify-center lg:justify-start items-center gap-2.5 border-b border-black/5 pb-4">
+          <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest w-24 sm:w-32 shrink-0 text-left">
+            {lang === 'vi' ? 'Phân loại:' : 'Classification:'}
           </span>
           <button
             onClick={() => setActiveTab('all')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all ${
+            className={`px-4.5 py-2 rounded-xl text-xs font-bold transition-all ${
               activeTab === 'all'
-                ? `${config.accent} text-white shadow-sm border-transparent`
-                : `border-gray-250 text-gray-600 bg-white hover:bg-black/5`
+                ? `${config.accent} text-white shadow-sm`
+                : `text-gray-600 bg-black/5 hover:bg-black/10`
             }`}
           >
             {lang === 'vi' ? 'Tất cả' : 'All'}
@@ -3340,10 +3340,10 @@ const NewsSection = ({ onEventClick }: { onEventClick?: (event: any) => void }) 
               <button
                 key={cl.id}
                 onClick={() => setActiveTab(cl.id)}
-                className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all ${
+                className={`px-4.5 py-2 rounded-xl text-xs font-bold transition-all ${
                   isActive 
-                    ? `${config.accent} text-white shadow-sm border-transparent` 
-                    : `border-gray-250 text-gray-600 bg-white hover:bg-black/5`
+                    ? `${config.accent} text-white shadow-sm` 
+                    : `text-gray-600 bg-black/5 hover:bg-black/10`
                 }`}
               >
                 {lang === 'vi' ? cl.name_vi : cl.name_en}
@@ -3354,16 +3354,16 @@ const NewsSection = ({ onEventClick }: { onEventClick?: (event: any) => void }) 
 
         {/* Sub-category filter pills row */}
         {subCategories.length > 0 && (
-          <div className="mb-10 flex flex-wrap justify-center lg:justify-start items-center gap-2 border-b border-black/5 pb-6">
-            <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest mr-2">
-              {lang === 'vi' ? 'Danh mục sự kiện:' : 'Event Category:'}
+          <div className="mb-10 flex flex-wrap justify-center lg:justify-start items-center gap-2.5 border-b border-black/5 pb-6">
+            <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest w-24 sm:w-32 shrink-0 text-left">
+              {lang === 'vi' ? 'Danh mục:' : 'Category:'}
             </span>
             <button
               onClick={() => { setActiveSubTab('all'); setCurrentPage(1); }}
-              className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all ${
+              className={`px-4.5 py-2 rounded-xl text-xs font-bold transition-all ${
                 activeSubTab === 'all'
-                  ? `${config.accent} text-white shadow-sm border-transparent`
-                  : 'border-gray-200 text-gray-600 bg-white hover:bg-black/5'
+                  ? `${config.accent} text-white shadow-sm`
+                  : `text-gray-600 bg-black/5 hover:bg-black/10`
               }`}
             >
               {lang === 'vi' ? 'Tất cả' : 'All'}
@@ -3374,10 +3374,10 @@ const NewsSection = ({ onEventClick }: { onEventClick?: (event: any) => void }) 
                 <button
                   key={sc.id}
                   onClick={() => { setActiveSubTab(String(sc.id)); setCurrentPage(1); }}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all ${
+                  className={`px-4.5 py-2 rounded-xl text-xs font-bold transition-all ${
                     isActive
-                      ? `${config.accent} text-white shadow-sm border-transparent`
-                      : 'border-gray-200 text-gray-600 bg-white hover:bg-black/5'
+                      ? `${config.accent} text-white shadow-sm`
+                      : `text-gray-600 bg-black/5 hover:bg-black/10`
                   }`}
                 >
                   {lang === 'vi' ? sc.name_vi : sc.name_en}
