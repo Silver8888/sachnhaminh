@@ -3320,70 +3320,74 @@ const NewsSection = ({ onEventClick }: { onEventClick?: (event: any) => void }) 
         </div>
 
         {/* Classification categories tabs */}
-        <div className="mb-4 flex flex-wrap justify-center lg:justify-start items-center gap-2.5 border-b border-black/5 pb-4">
-          <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest w-24 sm:w-32 shrink-0 text-left">
+        <div className="mb-4 flex flex-col md:flex-row items-start md:items-center gap-3 border-b border-black/5 pb-4 w-full">
+          <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest w-24 md:w-28 shrink-0 text-left pt-1 md:pt-0">
             {lang === 'vi' ? 'Phân loại:' : 'Classification:'}
           </span>
-          <button
-            onClick={() => setActiveTab('all')}
-            className={`px-4.5 py-2 rounded-xl text-xs font-bold transition-all ${
-              activeTab === 'all'
-                ? `${config.accent} text-white shadow-sm`
-                : `text-gray-600 bg-black/5 hover:bg-black/10`
-            }`}
-          >
-            {lang === 'vi' ? 'Tất cả' : 'All'}
-          </button>
-          {classifications.map((cl) => {
-            const isActive = activeTabId === cl.id && activeTab !== 'all';
-            return (
-              <button
-                key={cl.id}
-                onClick={() => setActiveTab(cl.id)}
-                className={`px-4.5 py-2 rounded-xl text-xs font-bold transition-all ${
-                  isActive 
-                    ? `${config.accent} text-white shadow-sm` 
-                    : `text-gray-600 bg-black/5 hover:bg-black/10`
-                }`}
-              >
-                {lang === 'vi' ? cl.name_vi : cl.name_en}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Sub-category filter pills row */}
-        {subCategories.length > 0 && (
-          <div className="mb-10 flex flex-wrap justify-center lg:justify-start items-center gap-2.5 border-b border-black/5 pb-6">
-            <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest w-24 sm:w-32 shrink-0 text-left">
-              {lang === 'vi' ? 'Danh mục:' : 'Category:'}
-            </span>
+          <div className="flex-1 flex flex-wrap gap-2 justify-start items-center">
             <button
-              onClick={() => { setActiveSubTab('all'); setCurrentPage(1); }}
+              onClick={() => setActiveTab('all')}
               className={`px-4.5 py-2 rounded-xl text-xs font-bold transition-all ${
-                activeSubTab === 'all'
+                activeTab === 'all'
                   ? `${config.accent} text-white shadow-sm`
                   : `text-gray-600 bg-black/5 hover:bg-black/10`
               }`}
             >
               {lang === 'vi' ? 'Tất cả' : 'All'}
             </button>
-            {subCategories.map(sc => {
-              const isActive = activeSubTab === String(sc.id);
+            {classifications.map((cl) => {
+              const isActive = activeTabId === cl.id && activeTab !== 'all';
               return (
                 <button
-                  key={sc.id}
-                  onClick={() => { setActiveSubTab(String(sc.id)); setCurrentPage(1); }}
+                  key={cl.id}
+                  onClick={() => setActiveTab(cl.id)}
                   className={`px-4.5 py-2 rounded-xl text-xs font-bold transition-all ${
-                    isActive
-                      ? `${config.accent} text-white shadow-sm`
+                    isActive 
+                      ? `${config.accent} text-white shadow-sm` 
                       : `text-gray-600 bg-black/5 hover:bg-black/10`
                   }`}
                 >
-                  {lang === 'vi' ? sc.name_vi : sc.name_en}
+                  {lang === 'vi' ? cl.name_vi : cl.name_en}
                 </button>
               );
             })}
+          </div>
+        </div>
+
+        {/* Sub-category filter pills row */}
+        {subCategories.length > 0 && (
+          <div className="mb-10 flex flex-col md:flex-row items-start md:items-center gap-3 border-b border-black/5 pb-6 w-full">
+            <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest w-24 md:w-28 shrink-0 text-left pt-1 md:pt-0">
+              {lang === 'vi' ? 'Danh mục:' : 'Category:'}
+            </span>
+            <div className="flex-1 flex flex-wrap gap-2 justify-start items-center">
+              <button
+                onClick={() => { setActiveSubTab('all'); setCurrentPage(1); }}
+                className={`px-4.5 py-2 rounded-xl text-xs font-bold transition-all ${
+                  activeSubTab === 'all'
+                    ? `${config.accent} text-white shadow-sm`
+                    : `text-gray-600 bg-black/5 hover:bg-black/10`
+                }`}
+              >
+                {lang === 'vi' ? 'Tất cả' : 'All'}
+              </button>
+              {subCategories.map(sc => {
+                const isActive = activeSubTab === String(sc.id);
+                return (
+                  <button
+                    key={sc.id}
+                    onClick={() => { setActiveSubTab(String(sc.id)); setCurrentPage(1); }}
+                    className={`px-4.5 py-2 rounded-xl text-xs font-bold transition-all ${
+                      isActive
+                        ? `${config.accent} text-white shadow-sm`
+                        : `text-gray-600 bg-black/5 hover:bg-black/10`
+                    }`}
+                  >
+                    {lang === 'vi' ? sc.name_vi : sc.name_en}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
 
