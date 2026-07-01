@@ -1987,7 +1987,7 @@ const Navbar = ({ onBookClick }: { onBookClick?: () => void }) => {
               if (slug === 'tieu-diem' && !showSpotlight) return null;
               if (slug === 'diem-sach' && !showBookReview) return null;
               return (
-                <a key={item} href={`#${slug}`} onClick={(e) => handleNavClick(e, slug)} className={`text-sm font-medium ${config.text} hover:opacity-70 transition-opacity`}>
+                <a key={item} href={`#${slug}`} onClick={(e) => handleNavClick(e, slug)} className={`text-sm font-medium ${config.text} hover:opacity-70 transition-opacity whitespace-nowrap`}>
                   {item}
                 </a>
               );
@@ -2302,7 +2302,7 @@ const Services = () => {
             </div>
           </div>
           <div className="space-y-4 mt-2">
-            <h2 className={`text-3xl md:text-4xl font-bold ${config.text} tracking-tight uppercase`}>
+            <h2 className={`text-3xl md:text-4xl font-bold ${config.text} tracking-tight uppercase whitespace-nowrap`}>
               {activeCategory === 'school' ? t.servicesTitle : t.cultureTitle}
             </h2>
             <div className={`w-32 h-1.5 ${config.accent} opacity-30`} />
