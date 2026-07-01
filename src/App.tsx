@@ -1,9 +1,9 @@
-import { useState, createContext, useContext, useEffect, FormEvent, useRef } from 'react';
+import { useState, createContext, useContext, useEffect, FormEvent, useRef, lazy, Suspense } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from './lib/supabase';
 
-import { Admin } from './Admin';
+const Admin = lazy(() => import('./Admin').then(m => ({ default: m.Admin })));
 import { isDriveFolderUrl, parseDriveUrl, getThumbnailForUrl } from './utils/driveHelpers';
 import 'react-quill-new/dist/quill.snow.css';
 
@@ -4220,7 +4220,14 @@ export default function App() {
     return (
       <ThemeContext.Provider value={{ theme, setTheme, font, setFont, config: themes[theme], siteName, siteLogo, contactAddress, contactPhone, facebookUrl, instagramUrl, customColor, customFont, showSpotlight, showBookReview, showCulture, partners_animation: partnersAnimation }}>
          {(theme === 'custom' || font === 'custom') && <style>{customStyles}</style>}
-         <Admin />
+         <Suspense fallback={
+           <div className="min-h-screen bg-gray-50 flex flex-col justify-center items-center">
+             <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+             <span className="mt-4 text-sm text-gray-500 font-semibold">Đang tải trang quản trị...</span>
+           </div>
+         }>
+           <Admin />
+         </Suspense>
       </ThemeContext.Provider>
     )
   }
