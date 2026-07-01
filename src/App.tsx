@@ -4464,9 +4464,9 @@ const Events = () => {
                              ? (lang === 'vi' ? `Tháng ${eventDate.getMonth() + 1}` : eventDate.toLocaleString('en-US', { month: 'short' })) 
                              : (lang === 'vi' ? 'Tháng 5' : 'May');
                            return (
-                             <div className="text-right mt-0.5">
-                                <span className={`text-2xl font-serif font-bold ${config.text} block leading-none`}>{displayDay}</span>
-                                <span className="text-[10px] uppercase font-bold opacity-40">{displayMonth}</span>
+                             <div className="text-right mt-0.5 shrink-0 min-w-[75px]">
+                                <span className={`text-3xl font-serif font-black ${config.text} block leading-none mb-1`}>{displayDay}</span>
+                                <span className={`text-[10px] uppercase font-black tracking-wider whitespace-nowrap block ${config.accentText}`}>{displayMonth}</span>
                              </div>
                            );
                         })()}
@@ -5851,9 +5851,9 @@ export default function App() {
                                          ? (lang === 'vi' ? `Tháng ${eventDate.getMonth() + 1}` : eventDate.toLocaleString('en-US', { month: 'short' })) 
                                          : (lang === 'vi' ? 'Tháng 5' : 'May');
                                        return (
-                                         <div className="text-right mt-0.5">
-                                            <span className={`text-2xl font-serif font-bold ${config.text} block leading-none`}>{displayDay}</span>
-                                            <span className="text-[10px] uppercase font-bold opacity-40">{displayMonth}</span>
+                                         <div className="text-right mt-0.5 shrink-0 min-w-[75px]">
+                                            <span className={`text-3xl font-serif font-black ${config.text} block leading-none mb-1`}>{displayDay}</span>
+                                            <span className={`text-[10px] uppercase font-black tracking-wider whitespace-nowrap block ${config.accentText}`}>{displayMonth}</span>
                                          </div>
                                        );
                                     })()}
