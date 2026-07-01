@@ -3940,7 +3940,7 @@ const Footer = () => {
 // --- Main App ---
 
 const FloatingButtons = () => {
-  const { config } = useContext(ThemeContext);
+  const { config, facebookUrl = 'https://www.facebook.com/sachnhaminh' } = useContext(ThemeContext);
   const [showScroll, setShowScroll] = useState(false);
 
   useEffect(() => {
@@ -3972,14 +3972,17 @@ const FloatingButtons = () => {
         )}
       </AnimatePresence>
 
-      <motion.button
+      <motion.a
+        href={facebookUrl}
+        target="_blank"
+        rel="noopener noreferrer"
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
         className="w-14 h-14 rounded-full bg-[#0084FF] text-white flex items-center justify-center shadow-2xl"
-        title="Facebook Messenger"
+        title="Facebook"
       >
         <Facebook className="w-7 h-7" />
-      </motion.button>
+      </motion.a>
 
       <motion.button
         whileHover={{ scale: 1.1 }}
