@@ -136,7 +136,42 @@ export const getDirectDriveUrl = (url: string, type: 'image' | 'video' = 'image'
   return url;
 };
 
-export const cleanHtmlContent = (html: string) => {
+export 
+const createSeoSlug = (title: string) => {
+  if (!title) return 'item';
+  return title
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-');
+};
+
+const getArticleSeoUrl = (art: any) => {
+  const slug = createSeoSlug(art.title_vi || 'news');
+  return '#/news/' + slug + '-' + art.id;
+};
+
+const getEventSeoUrl = (ev: any) => {
+  const slug = createSeoSlug(ev.title_vi || 'event');
+  return '#/event/' + slug + '-' + ev.id;
+};
+
+const extractIdFromSeoSlug = (slug: string) => {
+  if (!slug) return '';
+  const uuidMatch = slug.match(/([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})$/i);
+  if (uuidMatch) return uuidMatch[1];
+  
+  const intMatch = slug.match(/-([0-9]+)$/);
+  if (intMatch) return intMatch[1];
+
+  const parts = slug.split('-');
+  return parts[parts.length - 1] || slug;
+};
+const cleanHtmlContent = (html: string) => {
   if (!html) return '';
   return html.replace(/&nbsp;/g, ' ').replace(/\u00a0/g, ' ');
 };
@@ -2561,7 +2596,7 @@ const EventDetailPage = ({
                     <div
                       key={art.id}
                       onClick={() => {
-                        window.location.hash = '#/news/' + art.id;
+                        window.location.hash = getArticleSeoUrl(art);
                       }}
                       className="group cursor-pointer p-4 rounded-2xl bg-gray-50 hover:bg-blue-50/20 border border-gray-100 hover:border-blue-100 transition-all flex gap-4 text-left animate-in fade-in duration-300"
                     >
@@ -2816,7 +2851,7 @@ const EventDetailPage = ({
                   <div
                     key={art.id}
                     onClick={() => {
-                      window.location.hash = '#/news/' + art.id;
+                      window.location.hash = getArticleSeoUrl(art);
                     }}
                     className="group cursor-pointer p-3 rounded-2xl bg-gray-50 border border-gray-100 hover:border-blue-100 hover:bg-blue-50/20 transition-all duration-300 flex flex-col gap-2"
                   >
@@ -3035,7 +3070,7 @@ const ArticleDetailPage = ({
                     <div
                       key={art.id}
                       onClick={() => {
-                        window.location.hash = '#/news/' + art.id;
+                        window.location.hash = getArticleSeoUrl(art);
                       }}
                       className="group cursor-pointer flex flex-col gap-3"
                     >
@@ -3073,7 +3108,7 @@ const ArticleDetailPage = ({
               {associatedEvents.map(ev => (
                 <div
                   key={ev.id}
-                  onClick={() => { window.location.hash = '#/event/' + (ev).id; }}
+                  onClick={() => { window.location.hash = getEventSeoUrl(ev); }}
                   className="group cursor-pointer p-3.5 rounded-2xl bg-gray-50 border border-gray-100 hover:border-blue-100 hover:bg-blue-50/20 transition-all duration-300 flex flex-col gap-2"
                 >
                   {ev.image && (
@@ -3194,7 +3229,7 @@ const NewsSection = ({ onEventClick }: { onEventClick?: (event: any) => void }) 
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: idx * 0.1 }}
-                  onClick={() => { window.location.hash = '#/news/' + art.id; }}
+                  onClick={() => { window.location.hash = getArticleSeoUrl(art); }}
                   className={`group cursor-pointer rounded-3xl overflow-hidden ${config.card} border ${config.border} shadow-sm hover:shadow-md transition-all duration-300 flex flex-col`}
                 >
                   <div className="aspect-[16/10] overflow-hidden relative bg-gray-100">
@@ -3246,7 +3281,7 @@ const NewsSection = ({ onEventClick }: { onEventClick?: (event: any) => void }) 
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: idx * 0.05 }}
-                  onClick={() => { window.location.hash = '#/event/' + (ev).id; }}
+                  onClick={() => { window.location.hash = getEventSeoUrl(ev); }}
                   className={`group cursor-pointer p-4 rounded-2xl ${config.card} border ${config.border} shadow-sm hover:shadow-md transition-all duration-300 flex gap-4 items-center text-left`}
                 >
                   <div className="w-16 h-16 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
@@ -4850,7 +4885,7 @@ export default function App() {
       const eventMatch = window.location.hash.match(/^#\/event\/(.+)$/);
       
       if (newsMatch) {
-        const artId = newsMatch[1];
+        const artId = extractIdFromSeoSlug(newsMatch[1]);
         const found = articles.find((a: any) => String(a.id) === String(artId));
         if (found) {
           setSelectedArticle(found);
@@ -4858,7 +4893,7 @@ export default function App() {
           window.scrollTo(0, 0);
         }
       } else if (eventMatch) {
-        const evId = eventMatch[1];
+        const evId = extractIdFromSeoSlug(eventMatch[1]);
         const found = events.find((e: any) => String(e.id) === String(evId));
         if (found) {
           setSelectedEventPage(found);
