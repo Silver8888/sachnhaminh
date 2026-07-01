@@ -1666,7 +1666,7 @@ const saveSubCategory = async (e: React.FormEvent) => {
                 </button>
              )}
              {activeTab === 'articles' && (
-                <button onClick={() => setEditingArticle({ id: 'NEW', title_vi: '', content_vi: '', category: 'school' })} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors flex items-center gap-2 shadow-sm">
+                <button onClick={() => setEditingArticle({ id: 'NEW', title_vi: '', content_vi: '', category: '|' })} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors flex items-center gap-2 shadow-sm">
                   <Plus className="w-4 h-4" /> {t.addArticle}
                 </button>
              )}
@@ -1945,8 +1945,20 @@ const saveSubCategory = async (e: React.FormEvent) => {
                         <span className="font-medium text-gray-900 truncate">{article.title_vi}</span>
                       </div>
                       <div className="col-span-2 text-sm text-gray-600 capitalize">
-                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
-                           {article.category}
+                         <span className="inline-flex flex-wrap gap-1 items-center">
+                            {(() => {
+                              const [catPart = ''] = (article.category || '').split('|');
+                              const catIds = catPart.split(',').filter(Boolean);
+                              if (catIds.length === 0) return <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-50 text-gray-500 border border-gray-100">Không có</span>;
+                              return catIds.map(catId => {
+                                const match = classifications.find(c => c.id === catId);
+                                return (
+                                  <span key={catId} className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
+                                    {match ? match.name_vi : catId}
+                                  </span>
+                                );
+                              });
+                            })()}
                          </span>
                       </div>
                       <div className="col-span-2 text-sm text-gray-500 flex items-center gap-1.5">
@@ -3247,36 +3259,83 @@ const saveSubCategory = async (e: React.FormEvent) => {
                      <div>
                         <h3 className="text-sm font-semibold text-gray-900 border-b pb-2 mb-4">Basic Details</h3>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                           <div className="space-y-1">
-                              <label className="text-xs font-medium text-gray-500">Category</label>
-                              <select required value={editingArticle.category || ''} onChange={e => setEditingArticle({...editingArticle, category: e.target.value})} className="w-full border border-gray-300 bg-white px-3 py-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                 <option value="">-- Chọn danh mục --</option>
-                                 {articleCategories.map(c => (
-                                    <option key={c.id} value={c.id}>{c.name_vi}</option>
-                                 ))}
-                                 {editingArticle.category && !articleCategories.some(c => c.id === editingArticle.category) && (
-                                    <option value={editingArticle.category}>{articleCategories.find(c => c.name_vi === editingArticle.category || c.name_en === editingArticle.category)?.name_vi || editingArticle.category}</option>
-                                 )}
-                              </select>
-                           </div>
-                           <div className="space-y-1">
-                              <label className="text-xs font-medium text-gray-500">Date (Display)</label>
-                              <div className="relative">
-                                 <Calendar className="w-4 h-4 absolute left-3 top-2.5 text-gray-400" />
-                                 <input placeholder="e.g. 15/05/2026" value={editingArticle.date || ''} onChange={e => setEditingArticle({...editingArticle, date: e.target.value})} className="w-full border border-gray-300 pl-9 pr-3 py-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                              </div>
-                           </div>
-                           <div className="space-y-1">
-                              <label className="text-xs font-medium text-gray-500">Liên kết sự kiện (Tùy chọn)</label>
-                              <select value={editingArticle.event_id || ''} onChange={e => setEditingArticle({...editingArticle, event_id: e.target.value || null})} className="w-full border border-gray-300 bg-white px-3 py-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                 <option value="">-- Không liên kết --</option>
-                                 {events.map(ev => (
-                                    <option key={ev.id} value={ev.id}>
-                                       {adminLang === 'vi' ? ev.title_vi : ev.title_en || ev.title_vi}
-                                    </option>
-                                 ))}
-                              </select>
-                           </div>
+                           {(() => {
+                              const [catPart = '', eventPart = ''] = (editingArticle.category || '').split('|');
+                              const selectedCategories = catPart.split(',').filter(Boolean);
+                              const selectedEventIds = eventPart.split(',').filter(Boolean);
+                              
+                              return (
+                                 <>
+                                    <div className="space-y-1">
+                                       <label className="text-xs font-medium text-gray-500">Phân loại sự kiện (Chọn nhiều)</label>
+                                       <div className="flex flex-wrap gap-2 p-3 bg-gray-50 rounded-lg border border-gray-300 max-h-36 overflow-y-auto">
+                                          {classifications.map(cl => {
+                                             const isChecked = selectedCategories.includes(cl.id);
+                                             return (
+                                                <label key={cl.id} className="flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-md border border-gray-200 shadow-sm cursor-pointer hover:bg-gray-50 text-xs">
+                                                   <input
+                                                      type="checkbox"
+                                                      checked={isChecked}
+                                                      onChange={(e) => {
+                                                         let newCats;
+                                                         if (e.target.checked) {
+                                                            newCats = [...selectedCategories, cl.id];
+                                                         } else {
+                                                            newCats = selectedCategories.filter(id => id !== cl.id);
+                                                         }
+                                                         const newCategoryField = `${newCats.join(',')}|${selectedEventIds.join(',')}`;
+                                                         setEditingArticle({ ...editingArticle, category: newCategoryField });
+                                                      }}
+                                                      className="rounded text-blue-600 focus:ring-blue-500"
+                                                   />
+                                                   <span>{cl.name_vi}</span>
+                                                </label>
+                                             );
+                                          })}
+                                       </div>
+                                    </div>
+                                    <div className="space-y-1">
+                                       <label className="text-xs font-medium text-gray-500">Date (Display)</label>
+                                       <div className="relative">
+                                          <Calendar className="w-4 h-4 absolute left-3 top-2.5 text-gray-400" />
+                                          <input placeholder="e.g. 15/05/2026" value={editingArticle.date || ''} onChange={e => setEditingArticle({...editingArticle, date: e.target.value})} className="w-full border border-gray-300 pl-9 pr-3 py-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                       </div>
+                                    </div>
+                                    <div className="space-y-1">
+                                       <label className="text-xs font-medium text-gray-500">Liên kết sự kiện (Chọn nhiều)</label>
+                                       <div className="flex flex-col gap-1.5 p-3 bg-gray-50 rounded-lg border border-gray-300 max-h-36 overflow-y-auto">
+                                          {events.map(ev => {
+                                             const isChecked = selectedEventIds.includes(ev.id);
+                                             return (
+                                                <label key={ev.id} className="flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-md border border-gray-200 shadow-sm cursor-pointer hover:bg-gray-50 text-xs">
+                                                   <input
+                                                      type="checkbox"
+                                                      checked={isChecked}
+                                                      onChange={(e) => {
+                                                         let newEvents;
+                                                         if (e.target.checked) {
+                                                            newEvents = [...selectedEventIds, ev.id];
+                                                         } else {
+                                                            newEvents = selectedEventIds.filter(id => id !== ev.id);
+                                                         }
+                                                         const newCategoryField = `${selectedCategories.join(',')}|${newEvents.join(',')}`;
+                                                         setEditingArticle({ 
+                                                            ...editingArticle, 
+                                                            category: newCategoryField,
+                                                            event_id: newEvents[0] || null
+                                                         });
+                                                      }}
+                                                      className="rounded text-blue-600 focus:ring-blue-500"
+                                                   />
+                                                   <span className="truncate">{adminLang === 'vi' ? ev.title_vi : ev.title_en || ev.title_vi}</span>
+                                                </label>
+                                             );
+                                          })}
+                                       </div>
+                                    </div>
+                                 </>
+                              );
+                           })()}
                         </div>
                      </div>
 

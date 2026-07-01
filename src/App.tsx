@@ -2429,11 +2429,25 @@ const NewsSection = ({ onEventClick }: { onEventClick?: (event: any) => void }) 
   // Filter articles belonging to this classification
   const newsSource = articles.length > 0 ? articles : SCHOOL_NEWS;
   const filteredArticles = newsSource.filter(art => {
-    if (art.event_id || art.eventId) {
-      const ev = events.find(e => String(e.id) === String(art.event_id || art.eventId));
-      return ev && String(ev.category || 'sachnhaminh') === String(activeTabId);
+    const [catPart = '', eventPart = ''] = (art.category || '').split('|');
+    const categories = catPart.split(',').filter(Boolean);
+    const eventIds = eventPart.split(',').filter(Boolean);
+
+    // 1. Check if the active tab is one of the selected categories
+    if (categories.includes(activeTabId)) {
+      return true;
     }
-    return String(art.category) === String(activeTabId);
+
+    // 2. Check if any associated events belong to the active tab classification
+    const allEventIds = [...eventIds, art.event_id || art.eventId].filter(Boolean);
+    if (allEventIds.length > 0) {
+      return allEventIds.some(eventId => {
+        const ev = events.find(e => String(e.id) === String(eventId));
+        return ev && String(ev.category || 'sachnhaminh') === String(activeTabId);
+      });
+    }
+
+    return false;
   });
 
   return (
