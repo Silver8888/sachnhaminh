@@ -4457,10 +4457,19 @@ const Events = () => {
                             );
                           })()}
                        </div>
-                       <div className="text-right mt-0.5">
-                          <span className={`text-2xl font-serif font-bold ${config.text} block leading-none`}>{event.day}</span>
-                          <span className="text-[10px] uppercase font-bold opacity-40">{lang === 'vi' ? 'Tháng 5' : 'May'}</span>
-                       </div>
+                       {(() => {
+                           const eventDate = event.time ? new Date(event.time) : null;
+                           const displayDay = eventDate ? eventDate.getDate() : (event.day || (event.date && event.date.split('/')[0]) || '1');
+                           const displayMonth = eventDate 
+                             ? (lang === 'vi' ? `Tháng ${eventDate.getMonth() + 1}` : eventDate.toLocaleString('en-US', { month: 'short' })) 
+                             : (lang === 'vi' ? 'Tháng 5' : 'May');
+                           return (
+                             <div className="text-right mt-0.5">
+                                <span className={`text-2xl font-serif font-bold ${config.text} block leading-none`}>{displayDay}</span>
+                                <span className="text-[10px] uppercase font-bold opacity-40">{displayMonth}</span>
+                             </div>
+                           );
+                        })()}
                     </div>
                     
                     {/* Registration & Ticket Info Group */}
@@ -5835,10 +5844,19 @@ export default function App() {
                                         return null;
                                       })()}
                                    </div>
-                                   <div className="text-right mt-0.5">
-                                      <span className={`text-2xl font-serif font-bold ${config.text} block leading-none`}>{event.day || (event.date && event.date.split('/')[0])}</span>
-                                      <span className="text-[10px] uppercase font-bold opacity-40">{lang === 'vi' ? 'Tháng 5' : 'May'}</span>
-                                   </div>
+                                   {(() => {
+                                       const eventDate = event.time ? new Date(event.time) : null;
+                                       const displayDay = eventDate ? eventDate.getDate() : (event.day || (event.date && event.date.split('/')[0]) || '1');
+                                       const displayMonth = eventDate 
+                                         ? (lang === 'vi' ? `Tháng ${eventDate.getMonth() + 1}` : eventDate.toLocaleString('en-US', { month: 'short' })) 
+                                         : (lang === 'vi' ? 'Tháng 5' : 'May');
+                                       return (
+                                         <div className="text-right mt-0.5">
+                                            <span className={`text-2xl font-serif font-bold ${config.text} block leading-none`}>{displayDay}</span>
+                                            <span className="text-[10px] uppercase font-bold opacity-40">{displayMonth}</span>
+                                         </div>
+                                       );
+                                    })()}
                                 </div>
                                 {/* Registration & Ticket Info Group */}
                                 <div className="flex flex-wrap items-center gap-2 mt-0 mb-2">
