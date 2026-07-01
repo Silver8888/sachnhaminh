@@ -3210,7 +3210,7 @@ const NewsSection = ({ onEventClick }: { onEventClick?: (event: any) => void }) 
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeTabId]);
+  }, [activeTab]);
 
   useEffect(() => {
     if (classifications.length > 0 && !activeTab) {
