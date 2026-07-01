@@ -3206,6 +3206,11 @@ const NewsSection = ({ onEventClick }: { onEventClick?: (event: any) => void }) 
   
   const [selectedNews, setSelectedNews] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<string>('');
+  const [currentPage, setCurrentPage] = useState(1);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTabId]);
 
   useEffect(() => {
     if (classifications.length > 0 && !activeTab) {
@@ -3252,6 +3257,16 @@ const NewsSection = ({ onEventClick }: { onEventClick?: (event: any) => void }) 
     return false;
   });
 
+  // Extract featured and other articles
+  const featuredArticle = filteredArticles[0];
+  const otherArticles = filteredArticles.slice(1);
+
+  // Pagination for remaining articles (5 items per page)
+  const ARTICLES_PER_PAGE = 5;
+  const totalPages = Math.ceil(otherArticles.length / ARTICLES_PER_PAGE);
+  const startIndex = (currentPage - 1) * ARTICLES_PER_PAGE;
+  const paginatedOtherArticles = otherArticles.slice(startIndex, startIndex + ARTICLES_PER_PAGE);
+
   return (
     <section id={NAV_SLUGS[1]} className={`py-24 px-6 border-t ${config.border} bg-black/[0.01]`}>
       <div className="max-w-7xl mx-auto">
@@ -3291,50 +3306,140 @@ const NewsSection = ({ onEventClick }: { onEventClick?: (event: any) => void }) 
               📰 {lang === 'vi' ? 'Bài viết nổi bật' : 'Featured Articles'}
             </h3>
             
-            <div className="grid sm:grid-cols-2 gap-6">
-              {filteredArticles.map((art, idx) => (
-                <motion.div
-                  key={art.id}
-                  initial={{ opacity: 0, y: 15 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: idx * 0.1 }}
-                  onClick={() => { window.location.hash = getArticleSeoUrl(art); }}
-                  className={`group cursor-pointer rounded-3xl overflow-hidden ${config.card} border ${config.border} shadow-sm hover:shadow-md transition-all duration-300 flex flex-col`}
-                >
-                  <div className="aspect-[16/10] overflow-hidden relative bg-gray-100">
-                    {art.image ? (
-                      <img src={art.image} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" alt="" referrerPolicy="no-referrer" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-300">
-                        <BookOpen className="w-12 h-12" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="p-6 flex flex-col flex-1 justify-between gap-4 text-left">
-                    <div>
-                      <span className="text-gray-400 text-[10px] font-bold uppercase tracking-wider block mb-2">
-                        {art.date || (art.created_at ? new Date(art.created_at).toLocaleDateString('vi-VN') : '')}
-                      </span>
-                      <h4 className={`font-bold text-lg ${config.text} group-hover:text-blue-600 transition-colors line-clamp-2`}>
-                        {lang === 'vi' ? art.title_vi : art.title_en || art.title_vi}
-                      </h4>
-                      <p className={`text-xs opacity-75 mt-2 line-clamp-3 leading-relaxed`}>
-                        {lang === 'vi' ? art.summary_vi : art.summary_en || art.summary_vi}
-                      </p>
+            {/* 1. Main Featured Article */}
+            {featuredArticle && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                onClick={() => { window.location.hash = getArticleSeoUrl(featuredArticle); }}
+                className={`group cursor-pointer rounded-3xl overflow-hidden ${config.card} border ${config.border} shadow-md hover:shadow-lg transition-all duration-500 flex flex-col md:flex-row gap-6 p-6 mb-8 text-left`}
+              >
+                <div className="md:w-1/2 aspect-[16/10] md:aspect-auto md:h-64 rounded-2xl overflow-hidden bg-gray-100 shrink-0 relative">
+                  {featuredArticle.image ? (
+                    <img src={featuredArticle.image} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-103" alt="" referrerPolicy="no-referrer" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-300">
+                      <BookOpen className="w-16 h-16" />
                     </div>
-                    <span className="text-xs font-bold text-blue-600 group-hover:underline inline-flex items-center gap-1">
-                      {lang === 'vi' ? 'Xem tiếp' : 'Read more'} →
-                    </span>
-                  </div>
-                </motion.div>
-              ))}
-              {filteredArticles.length === 0 && (
-                <div className="col-span-full py-16 text-center text-gray-400 bg-white border border-gray-100 rounded-3xl">
-                  <p>{lang === 'vi' ? 'Chưa có bài viết nào thuộc phân mục này.' : 'No articles in this category.'}</p>
+                  )}
                 </div>
-              )}
-            </div>
+                <div className="flex-1 flex flex-col justify-between py-2 gap-4">
+                  <div>
+                    <span className="text-gray-400 text-xs font-bold uppercase tracking-wider block mb-2">
+                      {featuredArticle.date || (featuredArticle.created_at ? new Date(featuredArticle.created_at).toLocaleDateString('vi-VN') : '')}
+                    </span>
+                    <h4 className={`font-black text-xl md:text-2xl ${config.text} group-hover:text-blue-600 transition-colors line-clamp-2 leading-snug`}>
+                      {lang === 'vi' ? featuredArticle.title_vi : featuredArticle.title_en || featuredArticle.title_vi}
+                    </h4>
+                    <p className={`text-sm opacity-80 mt-3 line-clamp-3 md:line-clamp-4 leading-relaxed`}>
+                      {lang === 'vi' ? featuredArticle.summary_vi : featuredArticle.summary_en || featuredArticle.summary_vi}
+                    </p>
+                  </div>
+                  <span className="text-sm font-bold text-blue-600 group-hover:underline inline-flex items-center gap-1">
+                    {lang === 'vi' ? 'Xem tiếp' : 'Read more'} →
+                  </span>
+                </div>
+              </motion.div>
+            )}
+
+            {/* 2. Smaller Paginated Articles */}
+            {paginatedOtherArticles.length > 0 && (
+              <div className="space-y-6">
+                <h4 className={`text-xs font-black uppercase tracking-widest text-gray-400 mb-4 text-left border-b pb-2`}>
+                  {lang === 'vi' ? 'Bài viết khác' : 'Other Articles'}
+                </h4>
+                <div className="grid sm:grid-cols-2 gap-6">
+                  {paginatedOtherArticles.map((art, idx) => (
+                    <motion.div
+                      key={art.id}
+                      initial={{ opacity: 0, y: 15 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: idx * 0.05 }}
+                      onClick={() => { window.location.hash = getArticleSeoUrl(art); }}
+                      className={`group cursor-pointer rounded-3xl overflow-hidden ${config.card} border ${config.border} shadow-sm hover:shadow-md transition-all duration-300 flex flex-col`}
+                    >
+                      <div className="aspect-[16/10] overflow-hidden relative bg-gray-100">
+                        {art.image ? (
+                          <img src={art.image} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" alt="" referrerPolicy="no-referrer" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-300">
+                            <BookOpen className="w-12 h-12" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="p-6 flex flex-col flex-1 justify-between gap-4 text-left">
+                        <div>
+                          <span className="text-gray-400 text-[10px] font-bold uppercase tracking-wider block mb-2">
+                            {art.date || (art.created_at ? new Date(art.created_at).toLocaleDateString('vi-VN') : '')}
+                          </span>
+                          <h4 className={`font-bold text-base ${config.text} group-hover:text-blue-600 transition-colors line-clamp-2`}>
+                            {lang === 'vi' ? art.title_vi : art.title_en || art.title_vi}
+                          </h4>
+                          <p className={`text-xs opacity-75 mt-2 line-clamp-3 leading-relaxed`}>
+                            {lang === 'vi' ? art.summary_vi : art.summary_en || art.summary_vi}
+                          </p>
+                        </div>
+                        <span className="text-xs font-bold text-blue-600 group-hover:underline inline-flex items-center gap-1">
+                          {lang === 'vi' ? 'Xem tiếp' : 'Read more'} →
+                        </span>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Empty State */}
+            {!featuredArticle && (
+              <p className="text-sm text-gray-400 italic text-center py-12">
+                {lang === 'vi' ? 'Không có bài viết nào.' : 'No articles found.'}
+              </p>
+            )}
+
+            {/* 3. Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center gap-2 mt-12">
+                <button
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold border transition-all ${
+                    currentPage === 1
+                      ? 'opacity-40 cursor-not-allowed border-gray-200 text-gray-400'
+                      : 'border-gray-200 text-gray-600 hover:bg-black/5 bg-white shadow-sm'
+                  }`}
+                >
+                  ← {lang === 'vi' ? 'Trang trước' : 'Prev'}
+                </button>
+                
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`w-9 h-9 rounded-xl text-xs font-bold transition-all border ${
+                      currentPage === page
+                        ? `${config.accent} text-white shadow-md border-transparent`
+                        : 'border-gray-250 bg-white text-gray-600 hover:bg-black/5 shadow-sm'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+
+                <button
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold border transition-all ${
+                    currentPage === totalPages
+                      ? 'opacity-40 cursor-not-allowed border-gray-200 text-gray-400'
+                      : 'border-gray-200 text-gray-600 hover:bg-black/5 bg-white shadow-sm'
+                  }`}
+                >
+                  {lang === 'vi' ? 'Trang sau' : 'Next'} →
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Right Column: Events List */}
