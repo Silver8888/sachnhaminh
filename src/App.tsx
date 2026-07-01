@@ -2407,6 +2407,155 @@ const Services = () => {
   );
 };
 
+const ArticleDetailPage = ({ 
+  article, 
+  onBack, 
+  onEventClick 
+}: { 
+  article: any, 
+  onBack: () => void, 
+  onEventClick?: (ev: any) => void 
+}) => {
+  const { config } = useContext(ThemeContext);
+  const { lang, t } = useContext(LanguageContext);
+  const { classifications = [], events = [] } = useContext(DataContext);
+
+  const [catPart = '', eventPart = ''] = (article.category || '').split('|');
+  const categories = catPart.split(',').filter(Boolean);
+  const eventIds = eventPart.split(',').filter(Boolean);
+
+  const associatedEvents = events.filter(ev => 
+    eventIds.includes(String(ev.id)) || String(ev.id) === String(article.event_id || article.eventId)
+  );
+
+  const handleCategoryClick = (clId: string) => {
+    onBack();
+    setTimeout(() => {
+      const element = document.getElementById(NAV_SLUGS[1]);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 100);
+  };
+
+  return (
+    <div className="bg-gray-50/50 min-h-screen pt-28 pb-16">
+      <div className="max-w-7xl mx-auto px-6 mb-6">
+        <button 
+          onClick={onBack}
+          className="inline-flex items-center gap-2 text-sm font-bold text-gray-600 hover:text-blue-600 transition-colors bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-100"
+        >
+          ← {lang === 'vi' ? 'Quay lại trang chủ' : 'Back to Home'}
+        </button>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* Left Column: Event Classifications (Col-span-3) */}
+          <div className="lg:col-span-3 bg-white p-6 rounded-3xl border border-gray-100 shadow-sm space-y-4 text-left">
+            <h3 className={`text-sm font-black uppercase tracking-wider ${config.accentText} border-b pb-2 mb-2`}>
+              📁 {lang === 'vi' ? 'Phân loại sự kiện' : 'Event Classifications'}
+            </h3>
+            <div className="flex flex-col gap-1">
+              {classifications.map(cl => {
+                const isSelected = categories.includes(cl.id);
+                return (
+                  <button
+                    key={cl.id}
+                    onClick={() => handleCategoryClick(cl.id)}
+                    className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                      isSelected
+                        ? `${config.accent} text-white shadow-md`
+                        : `text-gray-600 hover:bg-black/5 hover:text-gray-900`
+                    }`}
+                  >
+                    {lang === 'vi' ? cl.name_vi : cl.name_en}
+                  </button>
+                );
+              })}
+              {classifications.length === 0 && (
+                <span className="text-xs text-gray-400 italic">No classifications found</span>
+              )}
+            </div>
+          </div>
+
+          {/* Center Column: Detailed Article Body (Col-span-6) */}
+          <div className="lg:col-span-6 bg-white p-8 md:p-10 rounded-3xl border border-gray-100 shadow-sm space-y-6 text-left">
+            {article.image && (
+              <div className="aspect-[21/9] rounded-2xl overflow-hidden border border-black/5 shadow-sm">
+                <img src={article.image} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+              </div>
+            )}
+            
+            <div className="space-y-2">
+              <div className="flex flex-wrap gap-1">
+                {categories.map(catId => {
+                  const match = classifications.find(c => c.id === catId);
+                  return (
+                    <span key={catId} className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-100">
+                      {match ? match.name_vi : catId}
+                    </span>
+                  );
+                })}
+              </div>
+              <h1 className={`text-2xl md:text-4xl font-black ${config.text} leading-tight`}>
+                {lang === 'vi' ? article.title_vi : article.title_en || article.title_vi}
+              </h1>
+              <span className="text-xs text-gray-400 block">{article.date || '—'}</span>
+            </div>
+
+            {article.summary_vi && (
+              <p className="text-sm font-semibold text-gray-600 leading-relaxed border-l-4 border-black/20 pl-4 py-1 italic bg-black/[0.01]">
+                {lang === 'vi' ? article.summary_vi : article.summary_en || article.summary_vi}
+              </p>
+            )}
+
+            <div 
+              className="prose prose-lg max-w-none text-gray-800 leading-relaxed ql-snow"
+              dangerouslySetInnerHTML={{ __html: cleanHtmlContent(lang === 'vi' ? article.content_vi : article.content_en || article.content_vi) }}
+            />
+          </div>
+
+          {/* Right Column: Related Events (Col-span-3) */}
+          <div className="lg:col-span-3 bg-white p-6 rounded-3xl border border-gray-100 shadow-sm space-y-4 text-left">
+            <h3 className={`text-sm font-black uppercase tracking-wider ${config.accentText} border-b pb-2 mb-2`}>
+              📅 {lang === 'vi' ? 'Sự kiện liên quan' : 'Related Events'}
+            </h3>
+            <div className="space-y-3">
+              {associatedEvents.map(ev => (
+                <div
+                  key={ev.id}
+                  onClick={() => onEventClick?.(ev)}
+                  className="group cursor-pointer p-3.5 rounded-2xl bg-gray-50 border border-gray-100 hover:border-blue-100 hover:bg-blue-50/20 transition-all duration-300 flex flex-col gap-2"
+                >
+                  {ev.image && (
+                    <div className="aspect-[16/9] rounded-xl overflow-hidden bg-gray-200">
+                      <img src={ev.image} alt="" className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500" referrerPolicy="no-referrer" />
+                    </div>
+                  )}
+                  <div>
+                    <span className="text-[9px] text-gray-400 font-bold block mb-1">
+                      {ev.date} {ev.time ? `• ${ev.time}` : ''}
+                    </span>
+                    <h4 className={`font-bold text-xs ${config.text} group-hover:text-blue-600 transition-colors line-clamp-2`}>
+                      {lang === 'vi' ? ev.title_vi : ev.title_en || ev.title_vi}
+                    </h4>
+                  </div>
+                </div>
+              ))}
+              {associatedEvents.length === 0 && (
+                <p className="text-xs text-gray-400 italic py-6 text-center">
+                  {lang === 'vi' ? 'Không có sự kiện liên quan.' : 'No related events.'}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const NewsSection = ({ onEventClick }: { onEventClick?: (event: any) => void }) => {
   const { config } = useContext(ThemeContext);
   const { t, lang } = useContext(LanguageContext);
@@ -2497,7 +2646,7 @@ const NewsSection = ({ onEventClick }: { onEventClick?: (event: any) => void }) 
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: idx * 0.1 }}
-                  onClick={() => setSelectedNews(art)}
+                  onClick={() => { window.location.hash = '#/news/' + art.id; }}
                   className={`group cursor-pointer rounded-3xl overflow-hidden ${config.card} border ${config.border} shadow-sm hover:shadow-md transition-all duration-300 flex flex-col`}
                 >
                   <div className="aspect-[16/10] overflow-hidden relative bg-gray-100">
@@ -4140,11 +4289,28 @@ export default function App() {
     }
   }, [expandedEventId]);
 
+  const [selectedArticle, setSelectedArticle] = useState<any | null>(null);
+
   useEffect(() => {
-    const handleHash = () => setIsAdminView(window.location.hash === '#/admin');
+    const handleHash = () => {
+      setIsAdminView(window.location.hash === '#/admin');
+      
+      const newsMatch = window.location.hash.match(/^#\/news\/(.+)$/);
+      if (newsMatch) {
+        const artId = newsMatch[1];
+        const found = articles.find((a: any) => String(a.id) === String(artId));
+        if (found) {
+          setSelectedArticle(found);
+          window.scrollTo(0, 0);
+        }
+      } else {
+        setSelectedArticle(null);
+      }
+    };
     window.addEventListener('hashchange', handleHash);
+    handleHash();
     return () => window.removeEventListener('hashchange', handleHash);
-  }, []);
+  }, [articles]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -4529,6 +4695,18 @@ export default function App() {
           </AnimatePresence>
 
           <main>
+            {selectedArticle ? (
+              <ArticleDetailPage 
+                article={selectedArticle} 
+                onBack={() => {
+                  window.location.hash = '#/';
+                  setSelectedArticle(null);
+                }} 
+                onEventClick={setSelectedEvent}
+              />
+            ) : (
+              <>
+
             <Hero 
               onBookClick={() => handleOpenBooking()} 
               onEventClick={setSelectedEvent}
@@ -5215,6 +5393,9 @@ export default function App() {
             )}
             <PartnersSection />
             <FloatingButtons />
+          
+              </>
+            )}
           </main>
           <Footer />
           </>
