@@ -3940,7 +3940,7 @@ const Footer = () => {
 // --- Main App ---
 
 const FloatingButtons = () => {
-  const { config, facebookUrl = 'https://www.facebook.com/sachnhaminh' } = useContext(ThemeContext);
+  const { config, facebookUrl = 'https://www.facebook.com/sachnhaminh', contactPhone = '090 457 03 83' } = useContext(ThemeContext);
   const [showScroll, setShowScroll] = useState(false);
 
   useEffect(() => {
@@ -3954,6 +3954,9 @@ const FloatingButtons = () => {
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  const cleanPhone = contactPhone.replace(/\s+/g, '');
+  const zaloUrl = `https://zalo.me/${cleanPhone}`;
 
   return (
     <div className="fixed bottom-8 right-8 z-50 flex flex-col gap-4">
@@ -3984,14 +3987,17 @@ const FloatingButtons = () => {
         <Facebook className="w-7 h-7" />
       </motion.a>
 
-      <motion.button
+      <motion.a
+        href={zaloUrl}
+        target="_blank"
+        rel="noopener noreferrer"
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
         className="w-14 h-14 rounded-full bg-[#0068FF] text-white flex items-center justify-center shadow-2xl"
         title="Zalo"
       >
          <MessageCircle className="w-7 h-7" />
-      </motion.button>
+      </motion.a>
     </div>
   );
 };
