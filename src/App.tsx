@@ -2427,6 +2427,15 @@ const ArticleDetailPage = ({
   const associatedEvents = events.filter(ev => 
     eventIds.includes(String(ev.id)) || String(ev.id) === String(article.event_id || article.eventId)
   );
+  
+  // Calculate related articles (same categories, max 3, excluding current)
+  const newsSource = articles.length > 0 ? articles : SCHOOL_NEWS;
+  const relatedArticles = newsSource.filter(art => {
+    if (String(art.id) === String(article.id)) return false;
+    const [otherCatPart = ''] = (art.category || '').split('|');
+    const otherCats = otherCatPart.split(',').filter(Boolean);
+    return otherCats.some(c => categories.includes(c));
+  }).slice(0, 3);
 
   const handleCategoryClick = (clId: string) => {
     onBack();
@@ -2502,10 +2511,48 @@ const ArticleDetailPage = ({
               </p>
             )}
 
+            
             <div 
               className="prose prose-lg max-w-none text-gray-800 leading-relaxed ql-snow"
               dangerouslySetInnerHTML={{ __html: cleanHtmlContent(lang === 'vi' ? article.content_vi : article.content_en || article.content_vi) }}
             />
+
+            {/* Related Articles Section */}
+            {relatedArticles.length > 0 && (
+              <div className="border-t border-gray-100 pt-8 mt-12 space-y-6">
+                <h3 className={`text-lg font-bold uppercase tracking-wider ${config.accentText}`}>
+                  📰 {lang === 'vi' ? 'Bài viết liên quan' : 'Related Articles'}
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {relatedArticles.map((art) => (
+                    <div
+                      key={art.id}
+                      onClick={() => {
+                        window.location.hash = '#/news/' + art.id;
+                      }}
+                      className="group cursor-pointer flex flex-col gap-3"
+                    >
+                      <div className="aspect-[16/10] rounded-xl overflow-hidden bg-gray-100 border border-black/5">
+                        {art.image ? (
+                          <img src={art.image} alt="" className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500" referrerPolicy="no-referrer" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-300">
+                            <BookOpen className="w-8 h-8" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="space-y-1 text-left">
+                        <span className="text-[9px] text-gray-400 font-bold block">{art.date}</span>
+                        <h4 className={`font-bold text-sm ${config.text} group-hover:text-blue-600 transition-colors line-clamp-2 leading-snug`}>
+                          {lang === 'vi' ? art.title_vi : art.title_en || art.title_vi}
+                        </h4>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
           </div>
 
           {/* Right Column: Related Events (Col-span-3) */}
