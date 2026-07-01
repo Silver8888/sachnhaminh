@@ -152,12 +152,12 @@ const createSeoSlug = (title: string) => {
 
 const getArticleSeoUrl = (art: any) => {
   const slug = createSeoSlug(art.title_vi || 'news');
-  return '#/news/' + slug + '-' + art.id;
+  return '#/news/' + slug;
 };
 
 const getEventSeoUrl = (ev: any) => {
   const slug = createSeoSlug(ev.title_vi || 'event');
-  return '#/event/' + slug + '-' + ev.id;
+  return '#/event/' + slug;
 };
 
 const extractIdFromSeoSlug = (slug: string) => {
@@ -4885,16 +4885,22 @@ export default function App() {
       const eventMatch = window.location.hash.match(/^#\/event\/(.+)$/);
       
       if (newsMatch) {
-        const artId = extractIdFromSeoSlug(newsMatch[1]);
-        const found = articles.find((a: any) => String(a.id) === String(artId));
+        const incomingSlug = newsMatch[1];
+        const found = articles.find((a: any) => {
+          const targetSlug = createSeoSlug(a.title_vi || 'news');
+          return targetSlug === incomingSlug || String(a.id) === String(incomingSlug);
+        });
         if (found) {
           setSelectedArticle(found);
           setSelectedEventPage(null);
           window.scrollTo(0, 0);
         }
       } else if (eventMatch) {
-        const evId = extractIdFromSeoSlug(eventMatch[1]);
-        const found = events.find((e: any) => String(e.id) === String(evId));
+        const incomingSlug = eventMatch[1];
+        const found = events.find((e: any) => {
+          const targetSlug = createSeoSlug(e.title_vi || 'event');
+          return targetSlug === incomingSlug || String(e.id) === String(incomingSlug);
+        });
         if (found) {
           setSelectedEventPage(found);
           setSelectedArticle(null);
