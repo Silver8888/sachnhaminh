@@ -193,7 +193,7 @@ export const getApprovedCount = (event: any) => {
 
 const translations = {
   vi: {
-    nav: ['Trang chủ', 'Tiêu điểm', 'Sự Kiện', 'Điểm sách', 'Liên Hệ'],
+    nav: ['Trang chủ', 'Tin Tức', 'Sự Kiện', 'Điểm sách', 'Liên Hệ'],
     heroSub: 'Chào mừng bạn đến với',
     heroTitle: 'Nơi Tâm Hồn\nTìm Thấy Nhà',
     heroDesc: 'Sách nhà Mình không chỉ là một tiệm sách, mà là không gian kết nối tri thức, nuôi dưỡng đam mê và sẻ chia những giá trị sống tốt đẹp.',
@@ -209,7 +209,7 @@ const translations = {
     noMoreVideos: 'Không có thêm video',
     noPhotos: 'Chưa có ảnh cho sự kiện này',
     noMoreNews: 'Không có thêm tin bài',
-    highlightsTitle: 'Tiêu Điểm',
+    highlightsTitle: 'Tin Tức',
     moreNewsBtn: 'Xem thêm tin bài',
     s1Title: 'Trải Nghiệm Thực Tế',
     s1Desc: 'Các em học sinh tham gia trải nghiệm quy trình làm sách và bảo quản sách.',
@@ -230,7 +230,7 @@ const translations = {
     footerDesc: 'Cùng nhau xây dựng một cộng đồng yêu sách, nơi tri thức và tâm hồn được trân trọng.'
   },
   en: {
-    nav: ['Home', 'Highlights', 'Events', 'Book Reviews', 'Contact'],
+    nav: ['Home', 'News', 'Events', 'Book Reviews', 'Contact'],
     heroSub: 'Welcome to',
     heroTitle: 'Where Souls\nFind Their Home',
     heroDesc: 'Sach nha Minh is not just a bookstore, but a space for connecting knowledge, nurturing passion, and sharing life values.',
@@ -246,7 +246,7 @@ const translations = {
     noMoreVideos: 'No more videos',
     noPhotos: 'No photos for this event',
     noMoreNews: 'No more news',
-    highlightsTitle: 'Highlights',
+    highlightsTitle: 'News',
     moreNewsBtn: 'More News',
     s1Title: 'Hands-on Experience',
     s1Desc: 'Students participate in learning about bookmaking and preservation processes.',
@@ -3191,7 +3191,7 @@ const NewsSection = ({ onEventClick }: { onEventClick?: (event: any) => void }) 
         <div className="mb-12 text-center lg:text-left flex flex-col lg:flex-row lg:items-end justify-between gap-6">
           <div className="space-y-4">
              <h2 className={`text-3xl md:text-4xl font-bold ${config.text} tracking-tight uppercase`}>
-               {lang === 'vi' ? 'Tin tức & Sự kiện' : 'News & Events'}
+               {lang === 'vi' ? 'Tin Tức' : 'News'}
              </h2>
              <div className={`w-32 h-1.5 ${config.accent} opacity-30 mx-auto lg:mx-0`} />
           </div>
