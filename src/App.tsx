@@ -2502,7 +2502,9 @@ const ArticleDetailPage = ({
               <h1 className={`text-2xl md:text-4xl font-black ${config.text} leading-tight`}>
                 {lang === 'vi' ? article.title_vi : article.title_en || article.title_vi}
               </h1>
-              <span className="text-xs text-gray-400 block">{article.date || '—'}</span>
+              <span className="text-xs text-gray-500 font-semibold block flex items-center gap-1.5 mt-2">
+                📅 {lang === 'vi' ? 'Ngày đăng' : 'Published'}: {article.date || (article.created_at ? new Date(article.created_at).toLocaleDateString('vi-VN') : '—')}
+              </span>
             </div>
 
             {article.summary_vi && (
@@ -2542,7 +2544,9 @@ const ArticleDetailPage = ({
                         )}
                       </div>
                       <div className="space-y-1 text-left">
-                        <span className="text-[9px] text-gray-400 font-bold block">{art.date}</span>
+                        <span className="text-[9px] text-gray-400 font-bold block">
+                          {art.date || (art.created_at ? new Date(art.created_at).toLocaleDateString('vi-VN') : '')}
+                        </span>
                         <h4 className={`font-bold text-sm ${config.text} group-hover:text-blue-600 transition-colors line-clamp-2 leading-snug`}>
                           {lang === 'vi' ? art.title_vi : art.title_en || art.title_vi}
                         </h4>
@@ -2699,7 +2703,9 @@ const NewsSection = ({ onEventClick }: { onEventClick?: (event: any) => void }) 
                   </div>
                   <div className="p-6 flex flex-col flex-1 justify-between gap-4 text-left">
                     <div>
-                      <span className="text-gray-400 text-[10px] font-bold uppercase tracking-wider block mb-2">{art.date}</span>
+                      <span className="text-gray-400 text-[10px] font-bold uppercase tracking-wider block mb-2">
+                        {art.date || (art.created_at ? new Date(art.created_at).toLocaleDateString('vi-VN') : '')}
+                      </span>
                       <h4 className={`font-bold text-lg ${config.text} group-hover:text-blue-600 transition-colors line-clamp-2`}>
                         {lang === 'vi' ? art.title_vi : art.title_en || art.title_vi}
                       </h4>
