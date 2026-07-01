@@ -2121,7 +2121,7 @@ const Hero = ({ onBookClick, onEventClick, onBookEventClick }: {
                   return undefined;
                 })()}
                 className={`text-4xl md:text-6xl lg:text-7xl font-bold ${config.text} mb-6 leading-[1.1] tracking-tight drop-shadow-xl [&_p]:m-0 [&_p]:p-0 [&_p]:inline-block [&_p]:w-full [&_p]:leading-inherit [&_p]:font-inherit [&_p]:text-inherit break-normal break-words`}
-                dangerouslySetInnerHTML={{ __html: heading }}
+                dangerouslySetInnerHTML={{ __html: cleanHtmlContent(heading) }}
               />
               <p className={`text-lg md:text-xl ${config.text} mb-8 leading-relaxed max-w-lg mx-auto lg:mx-0 opacity-90 drop-shadow-md whitespace-pre-line`}>
                 {description}
@@ -2177,7 +2177,7 @@ const Hero = ({ onBookClick, onEventClick, onBookEventClick }: {
                <div className="absolute bottom-6 left-6 right-6 text-white drop-shadow-md">
                  <div 
                    className="text-3xl md:text-5xl font-bold mb-2 prose-headings:m-0 prose-p:m-0"
-                   dangerouslySetInnerHTML={{ __html: lang === 'vi' ? selectedSlide.heading_vi || selectedSlide.heading_en : selectedSlide.heading_en || selectedSlide.heading_vi }}
+                   dangerouslySetInnerHTML={{ __html: cleanHtmlContent(lang === 'vi' ? selectedSlide.heading_vi || selectedSlide.heading_en : selectedSlide.heading_en || selectedSlide.heading_vi) }}
                  />
                </div>
             </div>
