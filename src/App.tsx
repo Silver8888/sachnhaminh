@@ -1727,9 +1727,7 @@ const CompactCalendar = ({ className = "", onEventClick, onBookClick }: { classN
   const [hoveredEvent, setHoveredEvent] = useState<any>(null);
   const [isScrolled, setIsScrolled] = useState(false);
   
-  const [currentDate, setCurrentDate] = useState(() => {
-    return events.length > 0 && events[0].time ? new Date(events[0].time) : new Date();
-  });
+  const [currentDate, setCurrentDate] = useState(() => new Date());
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
