@@ -1951,6 +1951,22 @@ const Navbar = ({ onBookClick }: { onBookClick?: () => void }) => {
       window.location.hash = '#' + slug;
     }
   };
+  const { classifications = [] } = useContext(DataContext);
+
+  const handleCategoryClick = (catId: string) => {
+    setMobileMenuOpen(false);
+    const element = document.getElementById(NAV_SLUGS[1]);
+    if (!element) {
+      window.location.hash = '#' + NAV_SLUGS[1];
+    }
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('select-news-category', { detail: catId }));
+      const targetElement = document.getElementById(NAV_SLUGS[1]);
+      if (targetElement) {
+        targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 150);
+  };
   const { lang, setLang, t } = useContext(LanguageContext);
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -1984,7 +2000,36 @@ const Navbar = ({ onBookClick }: { onBookClick?: () => void }) => {
           <div className="hidden lg:flex items-center gap-8">
             {t.nav.map((item, index) => {
               const slug = NAV_SLUGS[index];
-              if (slug === 'tieu-diem' && !showSpotlight) return null;
+              if (slug === 'tieu-diem') {
+                if (!showSpotlight) return null;
+                return (
+                  <div key={item} className="relative group py-2">
+                    <a 
+                      href={`#${slug}`} 
+                      onClick={(e) => handleNavClick(e, slug)} 
+                      className={`text-sm font-medium ${config.text} hover:opacity-70 transition-opacity whitespace-nowrap flex items-center gap-1`}
+                    >
+                      {item}
+                      <ChevronDown className="w-3.5 h-3.5 opacity-60 transition-transform group-hover:rotate-180" />
+                    </a>
+                    
+                    {/* Dropdown list */}
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 w-60 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform scale-95 group-hover:scale-100 origin-top z-[70]">
+                      <div className="flex flex-col">
+                        {classifications.map((cl: any) => (
+                          <button
+                            key={cl.id}
+                            onClick={() => handleCategoryClick(cl.id)}
+                            className="w-full text-left px-4 py-2.5 text-xs font-bold text-gray-600 hover:text-blue-600 hover:bg-gray-50 transition-all first:rounded-t-xl last:rounded-b-xl"
+                          >
+                            {lang === 'vi' ? cl.name_vi : cl.name_en}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
               if (slug === 'diem-sach' && !showBookReview) return null;
               return (
                 <a key={item} href={`#${slug}`} onClick={(e) => handleNavClick(e, slug)} className={`text-sm font-medium ${config.text} hover:opacity-70 transition-opacity whitespace-nowrap`}>
@@ -3155,6 +3200,16 @@ const NewsSection = ({ onEventClick }: { onEventClick?: (event: any) => void }) 
       setActiveTab(classifications[0].id);
     }
   }, [classifications, activeTab]);
+
+  useEffect(() => {
+    const handleSelectCategory = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const categoryId = customEvent.detail;
+      setActiveTab(categoryId);
+    };
+    window.addEventListener('select-news-category', handleSelectCategory);
+    return () => window.removeEventListener('select-news-category', handleSelectCategory);
+  }, []);
 
   const activeTabId = activeTab || (classifications[0]?.id || 'sachnhaminh');
 
