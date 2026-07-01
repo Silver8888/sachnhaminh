@@ -2133,6 +2133,7 @@ const Hero = ({ onBookClick, onEventClick, onBookEventClick }: {
   const heading = hasSlides ? (lang === 'vi' ? currentSlide?.heading_vi || currentSlide?.heading_en : currentSlide?.heading_en || currentSlide?.heading_vi)?.replace(/\\n/g, '\n') : defaultSlide.heading_vi?.replace(/\\n/g, '\n');
   const description = hasSlides ? (lang === 'vi' ? currentSlide?.description_vi || currentSlide?.description_en : currentSlide?.description_en || currentSlide?.description_vi)?.replace(/\\n/g, '\n') : defaultSlide.description_vi?.replace(/\\n/g, '\n');
   const hasContent = hasSlides && (currentSlide?.content_vi || currentSlide?.content_en);
+  const onlyHasTitle = hasSlides && !description && !(currentSlide?.content_vi || currentSlide?.content_en);
 
   const slideVariants = {
     fade: {
@@ -2209,7 +2210,8 @@ const Hero = ({ onBookClick, onEventClick, onBookEventClick }: {
               <p className={`text-lg md:text-xl ${config.text} mb-8 leading-relaxed max-w-lg mx-auto lg:mx-0 opacity-90 drop-shadow-md whitespace-pre-line`}>
                 {description}
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+              {!onlyHasTitle && (
+                <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                 {hasContent ? (
                   <button onClick={() => setSelectedSlide(currentSlide)} className={`${config.accent} text-white px-8 py-4 rounded-full font-medium flex items-center justify-center gap-2 hover:brightness-110 transition-all shadow-lg`}>
                     {lang === 'vi' ? 'Xem chi tiết' : 'Read more'} <BookOpen className="w-4 h-4" />
@@ -2220,6 +2222,7 @@ const Hero = ({ onBookClick, onEventClick, onBookEventClick }: {
                   </a>
                 )}
               </div>
+              )}
             </motion.div>
           </AnimatePresence>
 
