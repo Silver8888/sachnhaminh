@@ -3189,8 +3189,8 @@ const NewsSection = ({ onEventClick }: { onEventClick?: (event: any) => void }) 
     <section id={NAV_SLUGS[1]} className={`py-24 px-6 border-t ${config.border} bg-black/[0.01]`}>
       <div className="max-w-7xl mx-auto">
         <div className="mb-12 text-center lg:text-left flex flex-col lg:flex-row lg:items-end justify-between gap-6">
-          <div className="space-y-4">
-             <h2 className={`text-3xl md:text-4xl font-bold ${config.text} tracking-tight uppercase`}>
+          <div className="space-y-4 shrink-0">
+             <h2 className={`text-3xl md:text-4xl font-bold ${config.text} tracking-tight uppercase whitespace-nowrap`}>
                {lang === 'vi' ? 'Tin Tức' : 'News'}
              </h2>
              <div className={`w-32 h-1.5 ${config.accent} opacity-30 mx-auto lg:mx-0`} />
