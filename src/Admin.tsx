@@ -21,17 +21,34 @@ Size.whitelist = ['12px', '14px', '16px', '18px', '20px', '24px', '28px', '32px'
 Quill.register(Size, true);
 
 
+const quillImageHandler = function(this: any) {
+  const url = prompt("Vui lòng nhập đường dẫn (URL) hình ảnh:");
+  if (url) {
+    const range = this.quill.getSelection();
+    if (range) {
+      this.quill.insertEmbed(range.index, 'image', url);
+    } else {
+      this.quill.insertEmbed(0, 'image', url);
+    }
+  }
+};
+
 const quillModules = {
-  toolbar: [
-    [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-    [{ 'font': [] }],
-    [{ 'size': ['12px', '14px', '16px', '18px', '20px', '24px', '28px', '32px', '36px', '40px', '48px', '56px', '64px', '72px', '80px', '96px'] }],
-    ['bold', 'italic', 'underline', 'strike'],
-    [{ 'color': [] }, { 'background': [] }],
-    [{ 'align': [] }],
-    ['link', 'image', 'video'],
-    ['clean']
-  ],
+  toolbar: {
+    container: [
+      [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+      [{ 'font': [] }],
+      [{ 'size': ['12px', '14px', '16px', '18px', '20px', '24px', '28px', '32px', '36px', '40px', '48px', '56px', '64px', '72px', '80px', '96px'] }],
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ 'color': [] }, { 'background': [] }],
+      [{ 'align': [] }],
+      ['link', 'image', 'video'],
+      ['clean']
+    ],
+    handlers: {
+      image: quillImageHandler
+    }
+  }
 };
 
 const quillModulesSimple = {
@@ -3219,7 +3236,7 @@ const saveSubCategory = async (e: React.FormEvent) => {
                                  if (articleFormLang === 'vi') setEditingSlide({ ...editingSlide, content_vi: content });
                                  else setEditingSlide({ ...editingSlide, content_en: content });
                                }}
-                               className="h-[300px]"
+                               className="h-[300px]" modules={quillModules}
                              />
                            </div>
                            <div className="h-10"></div>
@@ -3382,7 +3399,7 @@ const saveSubCategory = async (e: React.FormEvent) => {
                               <div className="space-y-1">
                                  <label className="text-xs font-medium text-gray-500">Full Content (VI) <span className="text-red-500">*</span></label>
                                  <div className="bg-white">
-                                    <ReactQuill theme="snow" value={editingArticle.content_vi || ''} onChange={value => setEditingArticle({...editingArticle, content_vi: value})} className="h-64 mb-12" />
+                                    <ReactQuill theme="snow" value={editingArticle.content_vi || ''} onChange={value => setEditingArticle({...editingArticle, content_vi: value})} className="h-64 mb-12" modules={quillModules} />
                                  </div>
                               </div>
                            </div>
@@ -3404,7 +3421,7 @@ const saveSubCategory = async (e: React.FormEvent) => {
                               <div className="space-y-1">
                                  <label className="text-xs font-medium text-gray-500">Full Content (EN)</label>
                                  <div className="bg-white">
-                                    <ReactQuill theme="snow" value={editingArticle.content_en || ''} onChange={value => setEditingArticle({...editingArticle, content_en: value})} className="h-64 mb-12" />
+                                    <ReactQuill theme="snow" value={editingArticle.content_en || ''} onChange={value => setEditingArticle({...editingArticle, content_en: value})} className="h-64 mb-12" modules={quillModules} />
                                  </div>
                               </div>
                            </div>
@@ -3646,11 +3663,11 @@ const saveSubCategory = async (e: React.FormEvent) => {
                      </div>
                      <div className="space-y-1">
                         <label className="text-xs font-medium text-gray-500">Detailed Content (VI)</label>
-                        <ReactQuill theme="snow" value={editingEvent.content_vi || ''} onChange={content => setEditingEvent({...editingEvent, content_vi: content})} className="bg-white rounded-lg" />
+                        <ReactQuill theme="snow" value={editingEvent.content_vi || ''} onChange={content => setEditingEvent({...editingEvent, content_vi: content})} className="bg-white rounded-lg" modules={quillModules} />
                      </div>
                      <div className="space-y-1">
                         <label className="text-xs font-medium text-gray-500">Detailed Content (EN)</label>
-                        <ReactQuill theme="snow" value={editingEvent.content_en || ''} onChange={content => setEditingEvent({...editingEvent, content_en: content})} className="bg-white rounded-lg" />
+                        <ReactQuill theme="snow" value={editingEvent.content_en || ''} onChange={content => setEditingEvent({...editingEvent, content_en: content})} className="bg-white rounded-lg" modules={quillModules} />
                      </div>
                   </form>
                 </div>
@@ -4054,7 +4071,7 @@ const saveSubCategory = async (e: React.FormEvent) => {
                               value={editingEmailTemplate.body_html || ''} 
                               onChange={val => setEditingEmailTemplate({...editingEmailTemplate, body_html: val})}
                               className="bg-white rounded-lg"
-                              style={{ height: '300px', marginBottom: '50px' }}
+                              style={{ height: '300px', marginBottom: '50px' }} modules={quillModules}
                            />
                         </div>
                      </div>
