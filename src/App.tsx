@@ -3310,43 +3310,46 @@ const NewsSection = ({ onEventClick }: { onEventClick?: (event: any) => void }) 
   return (
     <section id={NAV_SLUGS[1]} className={`py-24 px-6 border-t ${config.border} bg-black/[0.01]`}>
       <div className="max-w-7xl mx-auto">
-        <div className="mb-12 text-center lg:text-left flex flex-col lg:flex-row lg:items-end justify-between gap-6">
+        <div className="mb-10 text-center lg:text-left">
           <div className="space-y-4 shrink-0">
              <h2 className={`text-3xl md:text-4xl font-bold ${config.text} tracking-tight uppercase whitespace-nowrap`}>
                {lang === 'vi' ? 'Tin Tức' : 'News'}
              </h2>
              <div className={`w-32 h-1.5 ${config.accent} opacity-30 mx-auto lg:mx-0`} />
           </div>
+        </div>
 
-          {/* Classification categories tabs */}
-          <div className="flex flex-wrap justify-center gap-2 bg-black/5 p-1.5 rounded-2xl">
-            <button
-              onClick={() => setActiveTab('all')}
-              className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                activeTab === 'all'
-                  ? `${config.accent} text-white shadow-md`
-                  : `text-gray-500 hover:text-gray-900 hover:bg-black/5`
-              }`}
-            >
-              {lang === 'vi' ? 'Tất cả' : 'All'}
-            </button>
-            {classifications.map((cl) => {
-              const isActive = activeTabId === cl.id && activeTab !== 'all';
-              return (
-                <button
-                  key={cl.id}
-                  onClick={() => setActiveTab(cl.id)}
-                  className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                    isActive 
-                      ? `${config.accent} text-white shadow-md` 
-                      : `text-gray-500 hover:text-gray-900 hover:bg-black/5`
-                  }`}
-                >
-                  {lang === 'vi' ? cl.name_vi : cl.name_en}
-                </button>
-              );
-            })}
-          </div>
+        {/* Classification categories tabs */}
+        <div className="mb-4 flex flex-wrap justify-center lg:justify-start items-center gap-2 border-b border-black/5 pb-4">
+          <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest mr-2">
+            {lang === 'vi' ? 'Phân loại sự kiện:' : 'Event Classification:'}
+          </span>
+          <button
+            onClick={() => setActiveTab('all')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all ${
+              activeTab === 'all'
+                ? `${config.accent} text-white shadow-sm border-transparent`
+                : `border-gray-250 text-gray-600 bg-white hover:bg-black/5`
+            }`}
+          >
+            {lang === 'vi' ? 'Tất cả' : 'All'}
+          </button>
+          {classifications.map((cl) => {
+            const isActive = activeTabId === cl.id && activeTab !== 'all';
+            return (
+              <button
+                key={cl.id}
+                onClick={() => setActiveTab(cl.id)}
+                className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all ${
+                  isActive 
+                    ? `${config.accent} text-white shadow-sm border-transparent` 
+                    : `border-gray-250 text-gray-600 bg-white hover:bg-black/5`
+                }`}
+              >
+                {lang === 'vi' ? cl.name_vi : cl.name_en}
+              </button>
+            );
+          })}
         </div>
 
         {/* Sub-category filter pills row */}
