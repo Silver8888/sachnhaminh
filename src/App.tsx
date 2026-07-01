@@ -3345,45 +3345,40 @@ const NewsSection = ({ onEventClick }: { onEventClick?: (event: any) => void }) 
 
             {/* 2. Smaller Paginated Articles */}
             {paginatedOtherArticles.length > 0 && (
-              <div className="space-y-6">
+              <div className="space-y-4">
                 <h4 className={`text-xs font-black uppercase tracking-widest text-gray-400 mb-4 text-left border-b pb-2`}>
                   {lang === 'vi' ? 'Bài viết khác' : 'Other Articles'}
                 </h4>
-                <div className="grid sm:grid-cols-2 gap-6">
+                <div className="flex flex-col gap-4">
                   {paginatedOtherArticles.map((art, idx) => (
                     <motion.div
                       key={art.id}
-                      initial={{ opacity: 0, y: 15 }}
+                      initial={{ opacity: 0, y: 10 }}
                       whileInView={{ opacity: 1, y: 0 }}
                       viewport={{ once: true }}
-                      transition={{ delay: idx * 0.05 }}
+                      transition={{ delay: idx * 0.03 }}
                       onClick={() => { window.location.hash = getArticleSeoUrl(art); }}
-                      className={`group cursor-pointer rounded-3xl overflow-hidden ${config.card} border ${config.border} shadow-sm hover:shadow-md transition-all duration-300 flex flex-col`}
+                      className={`group cursor-pointer p-3.5 rounded-2xl ${config.card} border ${config.border} hover:border-blue-100 hover:shadow-md transition-all duration-300 flex items-center gap-4 text-left`}
                     >
-                      <div className="aspect-[16/10] overflow-hidden relative bg-gray-100">
+                      <div className="w-24 sm:w-36 aspect-[16/10] rounded-xl overflow-hidden bg-gray-100 shrink-0 relative">
                         {art.image ? (
-                          <img src={art.image} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" alt="" referrerPolicy="no-referrer" />
+                          <img src={art.image} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-103" alt="" referrerPolicy="no-referrer" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-gray-300">
-                            <BookOpen className="w-12 h-12" />
+                            <BookOpen className="w-8 h-8" />
                           </div>
                         )}
                       </div>
-                      <div className="p-6 flex flex-col flex-1 justify-between gap-4 text-left">
-                        <div>
-                          <span className="text-gray-400 text-[10px] font-bold uppercase tracking-wider block mb-2">
-                            {art.date || (art.created_at ? new Date(art.created_at).toLocaleDateString('vi-VN') : '')}
-                          </span>
-                          <h4 className={`font-bold text-base ${config.text} group-hover:text-blue-600 transition-colors line-clamp-2`}>
-                            {lang === 'vi' ? art.title_vi : art.title_en || art.title_vi}
-                          </h4>
-                          <p className={`text-xs opacity-75 mt-2 line-clamp-3 leading-relaxed`}>
-                            {lang === 'vi' ? art.summary_vi : art.summary_en || art.summary_vi}
-                          </p>
-                        </div>
-                        <span className="text-xs font-bold text-blue-600 group-hover:underline inline-flex items-center gap-1">
-                          {lang === 'vi' ? 'Xem tiếp' : 'Read more'} →
+                      <div className="flex-1 min-w-0 space-y-1.5 py-1">
+                        <span className="text-[10px] text-gray-400 font-bold block">
+                          {art.date || (art.created_at ? new Date(art.created_at).toLocaleDateString('vi-VN') : '')}
                         </span>
+                        <h4 className={`font-bold text-sm sm:text-base ${config.text} group-hover:text-blue-600 transition-colors line-clamp-1 sm:line-clamp-2 leading-snug`}>
+                          {lang === 'vi' ? art.title_vi : art.title_en || art.title_vi}
+                        </h4>
+                        <p className="text-xs opacity-70 line-clamp-1 hidden sm:block">
+                          {lang === 'vi' ? art.summary_vi : art.summary_en || art.summary_vi}
+                        </p>
                       </div>
                     </motion.div>
                   ))}
