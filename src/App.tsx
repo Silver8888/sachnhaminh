@@ -1946,6 +1946,9 @@ const Navbar = ({ onBookClick }: { onBookClick?: () => void }) => {
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'start' });
       window.history.pushState(null, '', '#' + slug);
+    } else {
+      // Element not found (we are in detail page). Change hash to navigate back home and trigger scroll
+      window.location.hash = '#' + slug;
     }
   };
   const { lang, setLang, t } = useContext(LanguageContext);
@@ -4876,6 +4879,21 @@ export default function App() {
 
   const [selectedArticle, setSelectedArticle] = useState<any | null>(null);
   const [selectedEventPage, setSelectedEventPage] = useState<any | null>(null);
+
+  // Scroll to section when returning to home page from detailed views
+  useEffect(() => {
+    if (!selectedArticle && !selectedEventPage) {
+      const hash = window.location.hash.replace('#', '');
+      if (hash && NAV_SLUGS.includes(hash)) {
+        setTimeout(() => {
+          const element = document.getElementById(hash);
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 150);
+      }
+    }
+  }, [selectedArticle, selectedEventPage]);
 
   useEffect(() => {
     const handleHash = () => {
