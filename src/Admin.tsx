@@ -24,7 +24,13 @@ Quill.register(Size, true);
 const quillImageHandler = function(this: any) {
   const url = prompt("Vui lòng nhập đường dẫn (URL) hình ảnh:");
   if (url) {
-    const directUrl = parseDriveUrl(url, 'image');
+    let directUrl = url;
+    if (url.includes('drive.google.com') || url.includes('docs.google.com')) {
+      const match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+      if (match && match[1]) {
+        directUrl = `https://lh3.googleusercontent.com/d/${match[1]}`;
+      }
+    }
     const range = this.quill.getSelection();
     if (range) {
       this.quill.insertEmbed(range.index, 'image', directUrl);
