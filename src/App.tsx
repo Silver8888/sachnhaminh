@@ -2132,8 +2132,17 @@ const Hero = ({ onBookClick, onEventClick, onBookEventClick }: {
   const currentSlide = hasSlides ? (slides[safeIndex] || defaultSlide) : defaultSlide;
   const heading = hasSlides ? (lang === 'vi' ? currentSlide?.heading_vi || currentSlide?.heading_en : currentSlide?.heading_en || currentSlide?.heading_vi)?.replace(/\\n/g, '\n') : defaultSlide.heading_vi?.replace(/\\n/g, '\n');
   const description = hasSlides ? (lang === 'vi' ? currentSlide?.description_vi || currentSlide?.description_en : currentSlide?.description_en || currentSlide?.description_vi)?.replace(/\\n/g, '\n') : defaultSlide.description_vi?.replace(/\\n/g, '\n');
-  const hasContent = hasSlides && (currentSlide?.content_vi || currentSlide?.content_en);
-  const onlyHasTitle = hasSlides && !description && !(currentSlide?.content_vi || currentSlide?.content_en);
+  const isSlideHtmlEmpty = (html: string) => {
+    if (!html) return true;
+    const text = html.replace(/<[^>]*>/g, '').replace(/&nbsp;/gi, '').trim();
+    return text.length === 0;
+  };
+  const hasDescription = description && description.trim().length > 0;
+  const hasContent = hasSlides && (
+    (currentSlide?.content_vi && !isSlideHtmlEmpty(currentSlide.content_vi)) || 
+    (currentSlide?.content_en && !isSlideHtmlEmpty(currentSlide.content_en))
+  );
+  const onlyHasTitle = hasSlides && !hasDescription && !hasContent;
 
   const slideVariants = {
     fade: {
