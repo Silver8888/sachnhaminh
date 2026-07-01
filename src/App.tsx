@@ -2440,47 +2440,39 @@ const ArticleDetailPage = ({
 
   return (
     <div className="bg-gray-50/50 min-h-screen pt-28 pb-16">
-      <div className="max-w-7xl mx-auto px-6 mb-6">
+      <div className="max-w-7xl mx-auto px-6 mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <button 
           onClick={onBack}
-          className="inline-flex items-center gap-2 text-sm font-bold text-gray-600 hover:text-blue-600 transition-colors bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-100"
+          className="inline-flex items-center gap-2 text-sm font-bold text-gray-600 hover:text-blue-600 transition-colors bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-100 self-start"
         >
           ← {lang === 'vi' ? 'Quay lại trang chủ' : 'Back to Home'}
         </button>
+
+        {/* Classification categories tabs */}
+        <div className="flex flex-wrap gap-1.5 bg-black/5 p-1.5 rounded-2xl self-start md:self-auto">
+          {classifications.map((cl) => {
+            const isSelected = categories.includes(cl.id);
+            return (
+              <button
+                key={cl.id}
+                onClick={() => handleCategoryClick(cl.id)}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                  isSelected 
+                    ? `${config.accent} text-white shadow-md` 
+                    : `text-gray-500 hover:text-gray-900 hover:bg-black/5`
+                }`}
+              >
+                {lang === 'vi' ? cl.name_vi : cl.name_en}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* Left Column: Event Classifications (Col-span-3) */}
-          <div className="lg:col-span-3 bg-white p-6 rounded-3xl border border-gray-100 shadow-sm space-y-4 text-left">
-            <h3 className={`text-sm font-black uppercase tracking-wider ${config.accentText} border-b pb-2 mb-2`}>
-              📁 {lang === 'vi' ? 'Phân loại sự kiện' : 'Event Classifications'}
-            </h3>
-            <div className="flex flex-col gap-1">
-              {classifications.map(cl => {
-                const isSelected = categories.includes(cl.id);
-                return (
-                  <button
-                    key={cl.id}
-                    onClick={() => handleCategoryClick(cl.id)}
-                    className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                      isSelected
-                        ? `${config.accent} text-white shadow-md`
-                        : `text-gray-600 hover:bg-black/5 hover:text-gray-900`
-                    }`}
-                  >
-                    {lang === 'vi' ? cl.name_vi : cl.name_en}
-                  </button>
-                );
-              })}
-              {classifications.length === 0 && (
-                <span className="text-xs text-gray-400 italic">No classifications found</span>
-              )}
-            </div>
-          </div>
-
-          {/* Center Column: Detailed Article Body (Col-span-6) */}
-          <div className="lg:col-span-6 bg-white p-8 md:p-10 rounded-3xl border border-gray-100 shadow-sm space-y-6 text-left">
+          {/* Main Column: Detailed Article Body (Col-span-9) */}
+          <div className="lg:col-span-9 bg-white p-8 md:p-12 rounded-3xl border border-gray-100 shadow-sm space-y-6 text-left">
             {article.image && (
               <div className="aspect-[21/9] rounded-2xl overflow-hidden border border-black/5 shadow-sm">
                 <img src={article.image} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
