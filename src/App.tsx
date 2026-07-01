@@ -3231,9 +3231,22 @@ const NewsSection = ({ onEventClick }: { onEventClick?: (event: any) => void }) 
   }, []);
 
   const activeTabId = activeTab || (classifications[0]?.id || 'sachnhaminh');
+  const defaultClassId = classifications[0]?.id || 'sachnhaminh';
 
   // Filter events belonging to this classification
-  const filteredEvents = events.filter(e => String(e.category || 'sachnhaminh') === String(activeTabId));
+  const filteredEvents = events.filter(e => {
+    if (activeTab === 'all') return true;
+    return String(e.category || 'sachnhaminh') === String(activeTabId);
+  });
+  if (activeTab === 'all') {
+    filteredEvents.sort((a, b) => {
+      const aIsPlatform = String(a.category || 'sachnhaminh') === defaultClassId;
+      const bIsPlatform = String(b.category || 'sachnhaminh') === defaultClassId;
+      if (aIsPlatform && !bIsPlatform) return -1;
+      if (!aIsPlatform && bIsPlatform) return 1;
+      return 0;
+    });
+  }
 
   // Filter articles belonging to this classification
   const newsSource = articles.length > 0 ? articles : SCHOOL_NEWS;
@@ -3245,15 +3258,19 @@ const NewsSection = ({ onEventClick }: { onEventClick?: (event: any) => void }) 
 
     // 1. First, check if matches active classification
     let matchClassification = false;
-    if (categories.includes(activeTabId)) {
+    if (activeTab === 'all') {
       matchClassification = true;
     } else {
-      const allEventIds = [...eventIds, art.event_id || art.eventId].filter(Boolean);
-      if (allEventIds.length > 0) {
-        matchClassification = allEventIds.some(eventId => {
-          const ev = events.find(e => String(e.id) === String(eventId));
-          return ev && String(ev.category || 'sachnhaminh') === String(activeTabId);
-        });
+      if (categories.includes(activeTabId)) {
+        matchClassification = true;
+      } else {
+        const allEventIds = [...eventIds, art.event_id || art.eventId].filter(Boolean);
+        if (allEventIds.length > 0) {
+          matchClassification = allEventIds.some(eventId => {
+            const ev = events.find(e => String(e.id) === String(eventId));
+            return ev && String(ev.category || 'sachnhaminh') === String(activeTabId);
+          });
+        }
       }
     }
 
@@ -3266,6 +3283,19 @@ const NewsSection = ({ onEventClick }: { onEventClick?: (event: any) => void }) 
 
     return true;
   });
+
+  // Prioritize default classification ('Các chủ đề nền tảng của SNM') when 'All' is active
+  if (activeTab === 'all') {
+    filteredArticles.sort((a, b) => {
+      const [aCat = ''] = (a.category || '').split('|');
+      const [bCat = ''] = (b.category || '').split('|');
+      const aIsPlatform = aCat.split(',').includes(defaultClassId);
+      const bIsPlatform = bCat.split(',').includes(defaultClassId);
+      if (aIsPlatform && !bIsPlatform) return -1;
+      if (!aIsPlatform && bIsPlatform) return 1;
+      return 0;
+    });
+  }
 
   // Extract featured and other articles
   const featuredArticle = filteredArticles[0];
@@ -3290,8 +3320,18 @@ const NewsSection = ({ onEventClick }: { onEventClick?: (event: any) => void }) 
 
           {/* Classification categories tabs */}
           <div className="flex flex-wrap justify-center gap-2 bg-black/5 p-1.5 rounded-2xl">
+            <button
+              onClick={() => setActiveTab('all')}
+              className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                activeTab === 'all'
+                  ? `${config.accent} text-white shadow-md`
+                  : `text-gray-500 hover:text-gray-900 hover:bg-black/5`
+              }`}
+            >
+              {lang === 'vi' ? 'Tất cả' : 'All'}
+            </button>
             {classifications.map((cl) => {
-              const isActive = activeTabId === cl.id;
+              const isActive = activeTabId === cl.id && activeTab !== 'all';
               return (
                 <button
                   key={cl.id}
