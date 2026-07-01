@@ -3202,14 +3202,16 @@ const ArticleDetailPage = ({
 const NewsSection = ({ onEventClick }: { onEventClick?: (event: any) => void }) => {
   const { config } = useContext(ThemeContext);
   const { t, lang } = useContext(LanguageContext);
-  const { articles = [], events = [], classifications = [] } = useContext(DataContext);
+  const { articles = [], events = [], classifications = [], subCategories = [] } = useContext(DataContext);
   
   const [selectedNews, setSelectedNews] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<string>('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [activeSubTab, setActiveSubTab] = useState<string>('all');
 
   useEffect(() => {
     setCurrentPage(1);
+    setActiveSubTab('all');
   }, [activeTab]);
 
   useEffect(() => {
@@ -3236,25 +3238,33 @@ const NewsSection = ({ onEventClick }: { onEventClick?: (event: any) => void }) 
   // Filter articles belonging to this classification
   const newsSource = articles.length > 0 ? articles : SCHOOL_NEWS;
   const filteredArticles = newsSource.filter(art => {
-    const [catPart = '', eventPart = ''] = (art.category || '').split('|');
+    const [catPart = '', eventPart = '', subCatPart = ''] = (art.category || '').split('|');
     const categories = catPart.split(',').filter(Boolean);
     const eventIds = eventPart.split(',').filter(Boolean);
+    const subCategoriesList = subCatPart.split(',').filter(Boolean);
 
-    // 1. Check if the active tab is one of the selected categories
+    // 1. First, check if matches active classification
+    let matchClassification = false;
     if (categories.includes(activeTabId)) {
-      return true;
+      matchClassification = true;
+    } else {
+      const allEventIds = [...eventIds, art.event_id || art.eventId].filter(Boolean);
+      if (allEventIds.length > 0) {
+        matchClassification = allEventIds.some(eventId => {
+          const ev = events.find(e => String(e.id) === String(eventId));
+          return ev && String(ev.category || 'sachnhaminh') === String(activeTabId);
+        });
+      }
     }
 
-    // 2. Check if any associated events belong to the active tab classification
-    const allEventIds = [...eventIds, art.event_id || art.eventId].filter(Boolean);
-    if (allEventIds.length > 0) {
-      return allEventIds.some(eventId => {
-        const ev = events.find(e => String(e.id) === String(eventId));
-        return ev && String(ev.category || 'sachnhaminh') === String(activeTabId);
-      });
+    if (!matchClassification) return false;
+
+    // 2. Second, check sub-category filtering
+    if (activeSubTab !== 'all') {
+      return subCategoriesList.includes(activeSubTab);
     }
 
-    return false;
+    return true;
   });
 
   // Extract featured and other articles
@@ -3298,6 +3308,41 @@ const NewsSection = ({ onEventClick }: { onEventClick?: (event: any) => void }) 
             })}
           </div>
         </div>
+
+        {/* Sub-category filter pills row */}
+        {subCategories.length > 0 && (
+          <div className="mb-10 flex flex-wrap justify-center lg:justify-start items-center gap-2 border-b border-black/5 pb-6">
+            <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest mr-2">
+              {lang === 'vi' ? 'Danh mục sự kiện:' : 'Event Category:'}
+            </span>
+            <button
+              onClick={() => { setActiveSubTab('all'); setCurrentPage(1); }}
+              className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all ${
+                activeSubTab === 'all'
+                  ? `${config.accent} text-white shadow-sm border-transparent`
+                  : 'border-gray-200 text-gray-600 bg-white hover:bg-black/5'
+              }`}
+            >
+              {lang === 'vi' ? 'Tất cả' : 'All'}
+            </button>
+            {subCategories.map(sc => {
+              const isActive = activeSubTab === String(sc.id);
+              return (
+                <button
+                  key={sc.id}
+                  onClick={() => { setActiveSubTab(String(sc.id)); setCurrentPage(1); }}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all ${
+                    isActive
+                      ? `${config.accent} text-white shadow-sm border-transparent`
+                      : 'border-gray-200 text-gray-600 bg-white hover:bg-black/5'
+                  }`}
+                >
+                  {lang === 'vi' ? sc.name_vi : sc.name_en}
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         <div className="grid lg:grid-cols-12 gap-12 items-start">
           {/* Left Column: Articles/News List */}
