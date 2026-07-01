@@ -2407,153 +2407,223 @@ const Services = () => {
   );
 };
 
-const NewsSection = () => {
+const NewsSection = ({ onEventClick }: { onEventClick?: (event: any) => void }) => {
   const { config } = useContext(ThemeContext);
   const { t, lang } = useContext(LanguageContext);
-  const { articles: dbArticles } = useContext(DataContext);
+  const { articles = [], events = [], classifications = [] } = useContext(DataContext);
+  
   const [selectedNews, setSelectedNews] = useState<any>(null);
-  const [currentNewsPage, setCurrentNewsPage] = useState(1);
-  const newsSource = dbArticles && dbArticles.length > 0 ? dbArticles : SCHOOL_NEWS;
-  const filteredNews = newsSource;
-  const featuredNews = filteredNews[0];
-  const listNews = filteredNews.slice(1);
-  const NEWS_PER_PAGE = 3;
-  const totalNewsPages = Math.ceil(listNews.length / NEWS_PER_PAGE);
-  const currentDisplayedNews = listNews.slice((currentNewsPage - 1) * NEWS_PER_PAGE, currentNewsPage * NEWS_PER_PAGE);
+  const [activeTab, setActiveTab] = useState<string>('');
+
+  useEffect(() => {
+    if (classifications.length > 0 && !activeTab) {
+      setActiveTab(classifications[0].id);
+    }
+  }, [classifications, activeTab]);
+
+  const activeTabId = activeTab || (classifications[0]?.id || 'sachnhaminh');
+
+  // Filter events belonging to this classification
+  const filteredEvents = events.filter(e => String(e.category || 'sachnhaminh') === String(activeTabId));
+
+  // Filter articles belonging to this classification
+  const newsSource = articles.length > 0 ? articles : SCHOOL_NEWS;
+  const filteredArticles = newsSource.filter(art => {
+    if (art.event_id || art.eventId) {
+      const ev = events.find(e => String(e.id) === String(art.event_id || art.eventId));
+      return ev && String(ev.category || 'sachnhaminh') === String(activeTabId);
+    }
+    return String(art.category) === String(activeTabId);
+  });
 
   return (
     <section id={NAV_SLUGS[1]} className={`py-24 px-6 border-t ${config.border} bg-black/[0.01]`}>
       <div className="max-w-7xl mx-auto">
-        <div className="mb-16">
-          <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
-            <div className="flex items-center gap-4">
-              {/* Removed the "Cập nhật" label */}
-            </div>
-          </div>
-          
+        <div className="mb-12 text-center lg:text-left flex flex-col lg:flex-row lg:items-end justify-between gap-6">
           <div className="space-y-4">
              <h2 className={`text-3xl md:text-4xl font-bold ${config.text} tracking-tight uppercase`}>
-               {t.highlightsTitle}
+               {lang === 'vi' ? 'Tin tức & Sự kiện' : 'News & Events'}
              </h2>
-             <div className={`w-32 h-1.5 ${config.accent} opacity-30`} />
+             <div className={`w-32 h-1.5 ${config.accent} opacity-30 mx-auto lg:mx-0`} />
+          </div>
+
+          {/* Classification categories tabs */}
+          <div className="flex flex-wrap justify-center gap-2 bg-black/5 p-1.5 rounded-2xl">
+            {classifications.map((cl) => {
+              const isActive = activeTabId === cl.id;
+              return (
+                <button
+                  key={cl.id}
+                  onClick={() => setActiveTab(cl.id)}
+                  className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                    isActive 
+                      ? `${config.accent} text-white shadow-md` 
+                      : `text-gray-500 hover:text-gray-900 hover:bg-black/5`
+                  }`}
+                >
+                  {lang === 'vi' ? cl.name_vi : cl.name_en}
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-12 gap-12">
-          {/* Featured News - Left 7 cols */}
-          <div className="lg:col-span-7 h-full">
-            {featuredNews && (
-              <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                onClick={() => setSelectedNews(featuredNews)}
-                className={`group cursor-pointer rounded-[64px] overflow-hidden ${config.card} border ${config.border} shadow-2xl hover:shadow-3xl transition-all duration-700 flex flex-col h-full`}
-              >
-                <div className="aspect-[16/10] overflow-hidden relative shrink-0">
-                   <img src={featuredNews.image || undefined} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" alt="featured" />
-                   <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/60 to-transparent" />
-                   <div className="absolute top-10 left-10">
-                      <span className={`${config.accent} text-white text-[10px] font-black uppercase tracking-[0.2em] px-5 py-2 rounded-full`}>
-                        Featured
-                      </span>
-                   </div>
-                </div>
-                <div className="p-12 md:p-16 flex flex-col flex-1 gap-6">
-                  <div>
-                    <span className="text-gray-400 text-xs font-bold uppercase tracking-[0.3em] mb-4 block">{featuredNews.date}</span>
-                    <h3 className={`${config.text} text-3xl md:text-5xl font-black leading-tight max-w-xl group-hover:text-blue-600 transition-colors duration-500`}>
-                      {lang === 'vi' ? featuredNews.title_vi : featuredNews.title_en}
-                    </h3>
+        <div className="grid lg:grid-cols-12 gap-12 items-start">
+          {/* Left Column: Articles/News List */}
+          <div className="lg:col-span-8 space-y-6">
+            <h3 className={`text-lg font-bold uppercase tracking-wider ${config.accentText} mb-6 text-left`}>
+              📰 {lang === 'vi' ? 'Bài viết nổi bật' : 'Featured Articles'}
+            </h3>
+            
+            <div className="grid sm:grid-cols-2 gap-6">
+              {filteredArticles.map((art, idx) => (
+                <motion.div
+                  key={art.id}
+                  initial={{ opacity: 0, y: 15 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: idx * 0.1 }}
+                  onClick={() => setSelectedNews(art)}
+                  className={`group cursor-pointer rounded-3xl overflow-hidden ${config.card} border ${config.border} shadow-sm hover:shadow-md transition-all duration-300 flex flex-col`}
+                >
+                  <div className="aspect-[16/10] overflow-hidden relative bg-gray-100">
+                    {art.image ? (
+                      <img src={art.image} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" alt="" referrerPolicy="no-referrer" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-300">
+                        <BookOpen className="w-12 h-12" />
+                      </div>
+                    )}
                   </div>
-                  <p className={`${config.text} opacity-80 text-xl leading-relaxed line-clamp-3 font-serif italic flex-1`}>
-                    "{lang === 'vi' ? featuredNews.summary_vi : featuredNews.summary_en}"
-                  </p>
-                  <div className="pt-8 border-t border-black/5 flex items-center justify-between">
-                     <span className={`text-xs font-black uppercase tracking-widest ${config.accentText}`}>{lang === 'vi' ? 'Đọc tiếp câu chuyện' : 'Read full story'}</span>
-                     <div className={`w-14 h-14 rounded-full border ${config.border} flex items-center justify-center group-hover:${config.accent} group-hover:text-white group-hover:border-transparent transition-all`}>
-                        <ChevronRight className="w-6 h-6" />
-                     </div>
+                  <div className="p-6 flex flex-col flex-1 justify-between gap-4 text-left">
+                    <div>
+                      <span className="text-gray-400 text-[10px] font-bold uppercase tracking-wider block mb-2">{art.date}</span>
+                      <h4 className={`font-bold text-lg ${config.text} group-hover:text-blue-600 transition-colors line-clamp-2`}>
+                        {lang === 'vi' ? art.title_vi : art.title_en || art.title_vi}
+                      </h4>
+                      <p className={`text-xs opacity-75 mt-2 line-clamp-3 leading-relaxed`}>
+                        {lang === 'vi' ? art.summary_vi : art.summary_en || art.summary_vi}
+                      </p>
+                    </div>
+                    <span className="text-xs font-bold text-blue-600 group-hover:underline inline-flex items-center gap-1">
+                      {lang === 'vi' ? 'Xem tiếp' : 'Read more'} →
+                    </span>
                   </div>
+                </motion.div>
+              ))}
+              {filteredArticles.length === 0 && (
+                <div className="col-span-full py-16 text-center text-gray-400 bg-white border border-gray-100 rounded-3xl">
+                  <p>{lang === 'vi' ? 'Chưa có bài viết nào thuộc phân mục này.' : 'No articles in this category.'}</p>
                 </div>
-              </motion.div>
-            )}
+              )}
+            </div>
           </div>
 
-          {/* News List - Right 5 cols */}
-          <div className="lg:col-span-5 flex flex-col h-full min-h-0">
-            <h4 className={`text-xs font-black uppercase tracking-[0.3em] opacity-30 mb-8 px-4 shrink-0`}>{lang === 'vi' ? 'Tin mới nhất' : 'Recent News'}</h4>
-            <div className="flex flex-col gap-6 flex-1 overflow-y-auto pr-2 pb-4">
-               {currentDisplayedNews.map((news, idx) => (
-                 <motion.div 
-                    key={news.id}
-                    initial={{ opacity: 0, x: 20 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: idx * 0.1 }}
-                    onClick={() => setSelectedNews(news)}
-                    className={`flex items-start gap-6 p-6 rounded-[40px] group cursor-pointer transition-all hover:${config.card} hover:shadow-xl hover:border ${config.border}`}
-                 >
-                    <div className="w-28 h-28 md:w-36 md:h-36 flex-shrink-0 rounded-[32px] overflow-hidden shadow-lg group-hover:ring-4 ring-black/5 transition-all">
-                       <img src={news.image || undefined} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="news" />
-                    </div>
-                    <div className="flex flex-col justify-center gap-2 py-2">
-                       <span className="text-[10px] font-black opacity-30 uppercase tracking-[0.2em]">{news.date}</span>
-                       <h5 className={`text-xl font-bold ${config.text} group-hover:${config.accentText} transition-colors line-clamp-2 leading-tight tracking-tight`}>
-                         {lang === 'vi' ? news.title_vi : news.title_en}
-                       </h5>
-                       <div className="flex items-center gap-2 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                         <span className="text-[10px] font-black uppercase tracking-widest">{lang === 'vi' ? 'Khám phá' : 'Explore'}</span>
-                         <div className="w-4 h-px bg-current" />
-                       </div>
-                    </div>
-                 </motion.div>
-               ))}
-               {currentDisplayedNews.length === 0 && (
-                 <div className="p-10 rounded-[40px] bg-black/[0.02] border border-dashed border-black/10 text-center">
-                    <p className="text-xs font-bold opacity-30 uppercase tracking-widest">{t.noMoreNews}</p>
-                 </div>
-               )}
-            </div>
+          {/* Right Column: Events List */}
+          <div className="lg:col-span-4 space-y-6">
+            <h3 className={`text-lg font-bold uppercase tracking-wider ${config.accentText} mb-6 text-left`}>
+              📅 {lang === 'vi' ? 'Sự kiện liên quan' : 'Related Events'}
+            </h3>
             
-            {totalNewsPages > 1 && (
-              <div className="flex justify-center items-center gap-4 mt-2 shrink-0">
-                <button 
-                  onClick={() => setCurrentNewsPage(prev => Math.max(prev - 1, 1))}
-                  disabled={currentNewsPage === 1}
-                  className="p-2 rounded-full hover:bg-black/5 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            <div className="space-y-4">
+              {filteredEvents.map((ev, idx) => (
+                <motion.div
+                  key={ev.id}
+                  initial={{ opacity: 0, x: 15 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: idx * 0.05 }}
+                  onClick={() => onEventClick?.(ev)}
+                  className={`group cursor-pointer p-4 rounded-2xl ${config.card} border ${config.border} shadow-sm hover:shadow-md transition-all duration-300 flex gap-4 items-center text-left`}
                 >
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-                <span className="text-xs font-bold opacity-60">
-                  {currentNewsPage} / {totalNewsPages}
-                </span>
-                <button 
-                  onClick={() => setCurrentNewsPage(prev => Math.min(prev + 1, totalNewsPages))}
-                  disabled={currentNewsPage === totalNewsPages}
-                  className="p-2 rounded-full hover:bg-black/5 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                >
-                  <ChevronRight className="w-5 h-5" />
-                </button>
-              </div>
-            )}
-
-            <motion.button 
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className={`w-full py-6 mt-4 rounded-[32px] border ${config.border} flex items-center justify-center gap-3 text-sm font-black uppercase tracking-widest transition-all hover:bg-black hover:text-white shadow-lg shrink-0`}
-            >
-              {t.moreNewsBtn} <ChevronRight className="w-5 h-5" />
-            </motion.button>
+                  <div className="w-16 h-16 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
+                    {ev.image ? (
+                      <img src={ev.image} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="" referrerPolicy="no-referrer" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-300">
+                        <BookOpen className="w-6 h-6" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[10px] text-gray-400 font-bold uppercase block mb-1">
+                      {ev.date} {ev.time ? `• ${ev.time}` : ''}
+                    </span>
+                    <h4 className={`font-bold text-sm ${config.text} group-hover:text-blue-600 transition-colors truncate`}>
+                      {lang === 'vi' ? ev.title_vi : ev.title_en || ev.title_vi}
+                    </h4>
+                    <span className="text-[10px] opacity-60 truncate block mt-1">
+                      📍 {ev.location || '—'}
+                    </span>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-gray-400 group-hover:translate-x-1 transition-transform" />
+                </motion.div>
+              ))}
+              {filteredEvents.length === 0 && (
+                <div className="py-16 text-center text-gray-400 bg-white border border-gray-100 rounded-3xl">
+                  <p>{lang === 'vi' ? 'Chưa có sự kiện nào thuộc phân mục này.' : 'No events in this category.'}</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      <NewsModal news={selectedNews} onClose={() => setSelectedNews(null)} />
+      {/* Article Reader Modal */}
+      <AnimatePresence>
+        {selectedNews && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }} 
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm" 
+              onClick={() => setSelectedNews(null)} 
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }} 
+              animate={{ opacity: 1, scale: 1, y: 0 }} 
+              exit={{ opacity: 0, scale: 0.95, y: 20 }} 
+              className={`relative bg-white rounded-3xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col overflow-hidden text-left ${config.border} border`}
+            >
+              <div className="px-6 py-4 border-b border-black/[0.05] flex justify-between items-center bg-gray-50/50">
+                <span className={`text-[10px] font-bold uppercase tracking-widest ${config.accentText} bg-black/5 py-1 px-3 rounded-full`}>
+                  {selectedNews.category || 'Tin tức'}
+                </span>
+                <button onClick={() => setSelectedNews(null)} className="text-gray-400 hover:text-gray-600">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6">
+                {selectedNews.image && (
+                  <img src={selectedNews.image} alt={selectedNews.title_vi} className="w-full aspect-[21/9] object-cover rounded-2xl shadow-sm border border-black/5" referrerPolicy="no-referrer" />
+                )}
+                <div>
+                  <h3 className={`text-2xl md:text-3xl font-black ${config.text} leading-tight`}>
+                    {lang === 'vi' ? selectedNews.title_vi : selectedNews.title_en || selectedNews.title_vi}
+                  </h3>
+                  <span className="text-xs opacity-40 block mt-2">{selectedNews.date}</span>
+                </div>
+
+                {selectedNews.summary_vi && (
+                  <p className="text-sm font-semibold opacity-70 leading-relaxed border-l-4 border-black/20 pl-4 py-1 italic bg-black/[0.01]">
+                    {lang === 'vi' ? selectedNews.summary_vi : selectedNews.summary_en || selectedNews.summary_vi}
+                  </p>
+                )}
+
+                <div 
+                  className="opacity-90 leading-relaxed text-base max-w-none ql-snow"
+                  dangerouslySetInnerHTML={{ __html: cleanHtmlContent(lang === 'vi' ? selectedNews.content_vi : selectedNews.content_en || selectedNews.content_vi) }}
+                />
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </section>
   );
 };
-
 
 const ThumbnailWithHover = ({ 
   isActive, thumbUrl, onClick, children 
@@ -5115,7 +5185,7 @@ export default function App() {
             </section>
             {showCulture && <CultureChronicles />}
             {/* <Services /> */}
-            {showSpotlight && <NewsSection />}
+            {showSpotlight && <NewsSection onEventClick={setSelectedEvent} />}
             {showBookReview && (
               <AnimatePresence mode="wait">
                 <motion.div
